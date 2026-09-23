@@ -1,0 +1,632 @@
+// Spot AI Review — database schema
+// Every model uses a UUID primary key; no sequential IDs are ever exposed publicly.
+// Public-facing identifiers (campaign slugs/codes) are separate, non-sequential fields.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  SUPER_ADMIN
+  BUSINESS_OWNER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum BusinessMemberRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum BusinessStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum ReviewTone {
+  NATURAL
+  PROFESSIONAL
+  FRIENDLY
+  CASUAL
+  DETAILED
+}
+
+enum ReviewLength {
+  SHORT
+  MEDIUM
+  DETAILED
+}
+
+enum DraftVariant {
+  NATURAL
+  SHORT
+  DETAILED
+  REGENERATED
+  CUSTOM
+}
+
+enum PrivateFeedbackStatus {
+  NEW
+  READ
+  RESOLVED
+}
+
+enum AnalyticsEventType {
+  SCAN
+  SESSION_STARTED
+  LANGUAGE_SELECTED
+  RATING_GIVEN
+  ATTRIBUTES_SELECTED
+  FEEDBACK_SUBMITTED
+  AI_DRAFT_GENERATED
+  DRAFT_TRANSFORMED
+  DRAFT_COPIED
+  GOOGLE_CLICK
+  PRIVATE_FEEDBACK_SUBMITTED
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  RAZORPAY
+  STRIPE
+  MANUAL
+}
+
+enum AIPurpose {
+  GENERATE_DRAFTS
+  TRANSFORM_DRAFT
+  INSIGHTS
+}
+
+enum AIProviderName {
+  OPENAI
+  ANTHROPIC
+  GEMINI
+  MOCK
+}
+
+// ---------------------------------------------------------------------------
+// Identity & Access
+// ---------------------------------------------------------------------------
+
+model User {
+  id                 String     @id @default(uuid())
+  email              String     @unique
+  passwordHash       String
+  name               String
+  role               UserRole
+  status             UserStatus @default(ACTIVE)
+  emailVerified      DateTime?
+  image              String?
+  phone              String?
+
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+  businessMemberships     BusinessMember[]
+  subscriptions           Subscription[]
+  notifications           Notification[]
+  auditLogs               AuditLog[]              @relation("AuditActor")
+  createdCategories       BusinessCategory[]      @relation("CategoryCreator")
+  createdBusinesses       Business[]              @relation("BusinessCreator")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+// Short-lived, single-use token that powers the audited "Login as Owner"
+// super-admin feature. Never a substitute for the owner's real credentials.
+model ImpersonationToken {
+  id            String    @id @default(uuid())
+  token         String    @unique
+  targetUserId  String
+  createdById   String
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+// A BusinessMember row links a User to a Business with a role, so a single
+// business owner (User) can own/manage many businesses, and a business can
+// have a small team (owner/manager/staff) with different permissions.
+model BusinessMember {
+  id         String             @id @default(uuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  role       BusinessMemberRole @default(STAFF)
+  permissions Json?
+  invitedAt  DateTime           @default(now())
+  acceptedAt DateTime?
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+}
+
+// ---------------------------------------------------------------------------
+// Business Category System (dynamic, admin-configurable, not restaurant-only)
+// ---------------------------------------------------------------------------
+
+model BusinessCategory {
+  id             String   @id @default(uuid())
+  name           String
+  slug           String   @unique
+  description    String?
+  aiContext      String?  // extra context fed to the AI for this category
+  terminology    Json?    // recommended terminology / synonyms for this category
+  isCustom       Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdById    String?
+  createdBy      User?    @relation("CategoryCreator", fields: [createdById], references: [id])
+
+  attributes     CategoryAttribute[]
+  questions      CategoryQuestion[]
+  businesses     Business[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// The selectable "experience" chips shown to customers (e.g. Service, Staff, Cleanliness)
+model CategoryAttribute {
+  id         String           @id @default(uuid())
+  categoryId String
+  category   BusinessCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  label      String
+  order      Int              @default(0)
+  isActive   Boolean          @default(true)
+
+  @@index([categoryId])
+}
+
+// Configurable follow-up questions asked during the feedback flow
+model CategoryQuestion {
+  id         String           @id @default(uuid())
+  categoryId String
+  category   BusinessCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  text       String
+  isRequired Boolean          @default(false)
+  order      Int              @default(0)
+
+  @@index([categoryId])
+}
+
+// ---------------------------------------------------------------------------
+// Business
+// ---------------------------------------------------------------------------
+
+model Business {
+  id          String         @id @default(uuid())
+  name        String
+  slug        String         @unique
+  categoryId  String
+  category    BusinessCategory @relation(fields: [categoryId], references: [id])
+  subcategory String?
+  description String?
+  logoUrl     String?
+  coverImageUrl String?
+
+  phone       String?
+  email       String?
+  website     String?
+  whatsapp    String?
+  address     String?
+  city        String?
+  state       String?
+  country     String?
+
+  instagramUrl String?
+  facebookUrl  String?
+  linkedinUrl  String?
+  youtubeUrl   String?
+
+  usp             String?
+  targetAudience  String?
+  brandTone       String?
+
+  primaryColor   String @default("#0F172A")
+  secondaryColor String @default("#F8FAFC")
+  buttonColor    String @default("#2563EB")
+
+  defaultLanguage   String   @default("en")
+  allowedLanguages  Json     @default("[\"en\"]")
+  aiTone            ReviewTone   @default(NATURAL)
+  aiLength          ReviewLength @default(MEDIUM)
+
+  status BusinessStatus @default(ACTIVE)
+
+  createdById String
+  createdBy   User   @relation("BusinessCreator", fields: [createdById], references: [id])
+
+  members            BusinessMember[]
+  services           BusinessService[]
+  campaigns          ReviewCampaign[]
+  feedback           CustomerFeedback[]
+  privateFeedback    PrivateFeedback[]
+  analyticsEvents    AnalyticsEvent[]
+  aiUsage            AIUsage[]
+  googleReviewConfig GoogleReviewConfiguration?
+  customerSessions   CustomerSession[]
+  notifications      Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([status])
+}
+
+model BusinessService {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model GoogleReviewConfiguration {
+  id             String   @id @default(uuid())
+  businessId     String   @unique
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  googleReviewUrl String
+  googlePlaceId  String?
+  verifiedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// QR / NFC Campaigns
+// ---------------------------------------------------------------------------
+
+// A ReviewCampaign is the single addressable unit behind a printed QR code,
+// an NFC tap, or a digital link — they all resolve to the same /r/[slug] URL.
+model ReviewCampaign {
+  id          String         @id @default(uuid())
+  businessId  String
+  business    Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  code        String         @unique // e.g. SPOT-RVW-8H3K92
+  slug        String         @unique // public URL segment: /r/[slug]
+  placement   String?        // e.g. "Reception", "Table 3", "Billing Counter"
+  description String?
+  ctaText     String         @default("Scan to Share Your Experience")
+  googleReviewUrlOverride String?
+  status      CampaignStatus @default(ACTIVE)
+
+  qrCode      QRCode?
+  nfcDevices  NFCDevice[]
+  sessions    CustomerSession[]
+  analyticsEvents AnalyticsEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model QRCode {
+  id           String         @id @default(uuid())
+  campaignId   String         @unique
+  campaign     ReviewCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  style        String         @default("standard") // standard | branded | logo
+  foregroundColor String      @default("#0F172A")
+  backgroundColor String      @default("#FFFFFF")
+  includeLogo  Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model NFCDevice {
+  id         String         @id @default(uuid())
+  campaignId String
+  campaign   ReviewCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  label      String         // e.g. "NFC Standee - Entrance"
+  uid        String         @unique // physical tag identifier
+  isActive   Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+
+  @@index([campaignId])
+}
+
+// ---------------------------------------------------------------------------
+// Customer flow (anonymous — no login required)
+// ---------------------------------------------------------------------------
+
+model CustomerSession {
+  id           String   @id @default(uuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaignId   String
+  campaign     ReviewCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  language     String?
+  deviceType   String?
+  userAgentHash String?
+  currentStep  String   @default("landing")
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+
+  feedback     CustomerFeedback?
+  privateFeedback PrivateFeedback?
+  drafts       AIReviewDraft[]
+  analyticsEvents AnalyticsEvent[]
+  aiUsage      AIUsage[]
+
+  @@index([businessId])
+  @@index([campaignId])
+}
+
+model CustomerFeedback {
+  id                 String   @id @default(uuid())
+  sessionId          String   @unique
+  session            CustomerSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  businessId         String
+  business           Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  rating             Int
+  selectedAttributes Json     @default("[]")
+  writtenFeedback    String?
+  language           String   @default("en")
+  createdAt          DateTime @default(now())
+
+  @@index([businessId])
+  @@index([rating])
+}
+
+model AIReviewDraft {
+  id          String       @id @default(uuid())
+  sessionId   String
+  session     CustomerSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  variant     DraftVariant
+  content     String
+  tone        ReviewTone
+  length      ReviewLength
+  provider    AIProviderName
+  model       String
+  isFinal     Boolean      @default(false)
+  isCopied    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+
+  @@index([sessionId])
+}
+
+model PrivateFeedback {
+  id         String   @id @default(uuid())
+  sessionId  String   @unique
+  session    CustomerSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  message    String
+  contactInfo String?
+  status     PrivateFeedbackStatus @default(NEW)
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Analytics
+// ---------------------------------------------------------------------------
+
+model AnalyticsEvent {
+  id         String             @id @default(uuid())
+  businessId String
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaignId String?
+  campaign   ReviewCampaign?    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sessionId  String?
+  session    CustomerSession?   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type       AnalyticsEventType
+  metadata   Json?
+  createdAt  DateTime           @default(now())
+
+  @@index([businessId, type, createdAt])
+  @@index([campaignId])
+}
+
+// ---------------------------------------------------------------------------
+// Subscriptions & Billing (architecture-ready; payment provider pluggable)
+// ---------------------------------------------------------------------------
+
+model Plan {
+  id                     String   @id @default(uuid())
+  name                   String   @unique
+  slug                   String   @unique
+  monthlyPrice           Int      @default(0) // stored in smallest currency unit
+  yearlyPrice            Int      @default(0)
+  currency               String   @default("INR")
+  businessLimit          Int      @default(1)
+  campaignLimit          Int      @default(3)
+  aiGenerationsPerMonth  Int      @default(100)
+  analyticsRetentionDays Int      @default(30)
+  teamMemberLimit        Int      @default(1)
+  languageLimit          Int      @default(2)
+  advancedInsights       Boolean  @default(false)
+  isActive               Boolean  @default(true)
+
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  userId             String
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId             String
+  plan               Plan               @relation(fields: [planId], references: [id])
+  status             SubscriptionStatus @default(TRIALING)
+  billingCycle       BillingCycle       @default(MONTHLY)
+  currentPeriodStart DateTime           @default(now())
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean            @default(false)
+
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Payment {
+  id             String          @id @default(uuid())
+  subscriptionId String
+  subscription   Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  amount         Int
+  currency       String          @default("INR")
+  status         PaymentStatus   @default(PENDING)
+  provider       PaymentProvider @default(MANUAL)
+  providerRef    String?
+  createdAt      DateTime        @default(now())
+
+  @@index([subscriptionId])
+}
+
+// ---------------------------------------------------------------------------
+// AI usage / cost tracking
+// ---------------------------------------------------------------------------
+
+model AIUsage {
+  id              String         @id @default(uuid())
+  businessId      String
+  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  sessionId       String?
+  session         CustomerSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  purpose         AIPurpose
+  provider        AIProviderName
+  model           String
+  inputTokens     Int?
+  outputTokens    Int?
+  estimatedCostUsd Float         @default(0)
+  createdAt       DateTime       @default(now())
+
+  @@index([businessId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications & Audit
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type       String
+  title      String
+  message    String
+  isRead     Boolean  @default(false)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  actor       User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  action      String
+  targetType  String
+  targetId    String?
+  metadata    Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([targetType, targetId])
+}
+
+// ---------------------------------------------------------------------------
+// Platform-wide configuration (Super Admin)
+// ---------------------------------------------------------------------------
+
+model Language {
+  id        String  @id @default(uuid())
+  code      String  @unique // e.g. "en", "hi", "hi-en" (Hinglish)
+  name      String
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false)
+}
+
+model PlatformSettings {
+  id               String   @id @default(uuid())
+  platformName     String   @default("Spot AI Review")
+  logoUrl          String?
+  primaryColor     String   @default("#2563EB")
+  aiProvider       AIProviderName @default(MOCK)
+  aiModel          String   @default("gpt-4o-mini")
+  defaultSystemPrompt String @default("Write a natural review based ONLY on the customer's stated experience. Do not invent facts. Do not add claims the customer did not provide. Preserve the customer's meaning. Avoid exaggerated marketing language. The review should sound like a real person wrote it.")
+  maxAIGenerationsPerSession Int @default(10)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
