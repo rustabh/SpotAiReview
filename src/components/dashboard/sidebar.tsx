@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_ITEMS } from "./nav-items";
 import { logoutAction } from "@/actions/session";
@@ -26,19 +25,12 @@ export function DashboardSidebar({ userName }: { userName: string }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                active ? "text-white" : "text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800"
+                "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-200",
+                active ? "bg-brand-600 text-white shadow-soft" : "text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800"
               )}
             >
-              {active && (
-                <motion.span
-                  layoutId="sidebar-active-pill"
-                  className="absolute inset-0 rounded-xl bg-brand-600 shadow-soft"
-                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                />
-              )}
-              <Icon size={17} className="relative" />
-              <span className="relative">{item.label}</span>
+              <Icon size={17} />
+              <span>{item.label}</span>
             </Link>
           );
         })}
