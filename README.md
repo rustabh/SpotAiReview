@@ -2,6 +2,8 @@
 
 **Turn Real Experiences Into Better Reviews.**
 
+Live: https://spotaireview.vercel.app
+
 Spot AI Review is an AI-assisted customer feedback and review-writing platform, built as a product inside the **Febble Spot** ecosystem. It works for any kind of business — restaurants, salons, clinics, hotels, retail, agencies, real estate, gyms, coaching institutes, and more.
 
 The AI never invents a customer's experience. It only helps a customer put their own, real experience into words — the customer stays in control of the final review and always posts it themselves.
