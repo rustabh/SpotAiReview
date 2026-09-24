@@ -64,6 +64,9 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Logo size={30} wordmarkClassName="text-sm" />
           <div className="flex items-center gap-2">
+            <Link href="/about" className="hidden text-sm font-medium text-ink-500 hover:text-foreground sm:inline-flex">
+              <span className="rounded-full px-3 py-1.5">About</span>
+            </Link>
             <Link href="/login">
               <Button variant="ghost" size="sm">Log in</Button>
             </Link>
@@ -251,6 +254,7 @@ export default function Home() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
           <Logo size={24} wordmarkClassName="text-xs" tagline={false} />
+          <Link href="/about" className="text-xs font-medium text-ink-500 hover:text-foreground">About Us</Link>
           <p className="flex items-center gap-1.5 text-xs text-ink-400"><ShieldCheck size={13} /> Powered by Febble Spot</p>
         </div>
       </footer>
