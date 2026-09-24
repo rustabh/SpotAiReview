@@ -5,6 +5,11 @@ import type { NextAuthConfig } from "next-auth";
  * The full config with the Credentials provider lives in `auth.ts`.
  */
 export const authConfig: NextAuthConfig = {
+  // Required behind a platform proxy (Vercel, custom domains, preview URLs):
+  // without this, NextAuth rejects requests whose Host header doesn't
+  // exactly match AUTH_URL/NEXTAUTH_URL, which silently bounces login back
+  // to the sign-in page.
+  trustHost: true,
   pages: {
     signIn: "/login",
   },
