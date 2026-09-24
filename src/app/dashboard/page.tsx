@@ -19,7 +19,7 @@ export default async function DashboardOverviewPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">Good morning, {firstName}</h1>
+        <h1 className="font-heading text-xl font-bold tracking-tight text-foreground sm:text-2xl">Good morning, {firstName}</h1>
         <p className="mt-1 text-sm text-ink-500">Here&apos;s how your businesses are doing.</p>
       </div>
 

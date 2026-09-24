@@ -22,7 +22,7 @@ export function PrivateFeedbackStep({
   if (!showForm) {
     return (
       <div className="px-6 pt-14 text-center">
-        <h2 className="text-lg font-semibold text-foreground">Would you like to share private feedback with the business?</h2>
+        <h2 className="font-heading text-lg font-bold tracking-tight text-foreground">Would you like to share private feedback with the business?</h2>
         <p className="mt-2 text-sm text-ink-500">This goes directly to the business, not to a public review.</p>
         <div className="mt-8 flex flex-col gap-2.5">
           <Button size="lg" style={{ backgroundColor: buttonColor }} onClick={() => setShowForm(true)}>Yes, share feedback</Button>
@@ -34,7 +34,7 @@ export function PrivateFeedbackStep({
 
   return (
     <div className="px-6 pt-10">
-      <h2 className="text-lg font-semibold text-foreground">Tell the business what happened</h2>
+      <h2 className="font-heading text-lg font-bold tracking-tight text-foreground">Tell the business what happened</h2>
       <Alert tone="info" className="mt-3">This is sent privately to the business — it won&apos;t become a public review.</Alert>
       <Textarea rows={5} className="mt-4" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="What could have been better?" />
       <div className="mt-3">

@@ -117,7 +117,7 @@ export function AiReviewStep({
   if (needMoreInfo) {
     return (
       <div className="px-6 pt-14">
-        <h2 className="text-lg font-semibold text-foreground">Would you like to tell us a little more about your experience?</h2>
+        <h2 className="font-heading text-lg font-bold tracking-tight text-foreground">Would you like to tell us a little more about your experience?</h2>
         <p className="mt-1 text-sm text-ink-500">A few more words help us write a genuine review that sounds like you.</p>
         <Textarea rows={4} className="mt-4" value={extraDetail} onChange={(e) => setExtraDetail(e.target.value)} placeholder="Example: The staff was friendly and fixed the issue quickly." />
         <Button className="mt-4 w-full" size="lg" style={{ backgroundColor: buttonColor }} loading={submittingDetail} disabled={!extraDetail.trim()} onClick={submitMoreDetail}>
@@ -137,15 +137,15 @@ export function AiReviewStep({
 
   return (
     <div className="px-6 pt-8">
-      <h2 className="text-lg font-semibold text-foreground">Let&apos;s turn your experience into a review.</h2>
+      <h2 className="font-heading text-lg font-bold tracking-tight text-foreground">Let&apos;s turn your experience into a review.</h2>
 
       <div className="mt-4 flex gap-2 overflow-x-auto no-scrollbar">
         {drafts.map((d) => (
           <button
             key={d.id}
             onClick={() => selectDraft(d)}
-            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium ${
-              activeId === d.id ? "border-brand-500 bg-brand-50 text-brand-700" : "border-border text-ink-500"
+            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              activeId === d.id ? "border-brand-600 bg-brand-600 text-white shadow-soft" : "border-border text-ink-500 hover:border-brand-300"
             }`}
           >
             {VARIANT_LABELS[d.variant] ?? d.variant}
@@ -155,7 +155,7 @@ export function AiReviewStep({
 
       <Textarea
         rows={6}
-        className="mt-4"
+        className="mt-4 shadow-card"
         value={content}
         onChange={(e) => { setContent(e.target.value); setCopied(false); }}
       />

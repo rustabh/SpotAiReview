@@ -22,13 +22,13 @@ export function LanguageStep({
     <div className="flex flex-col items-center px-6 pt-12 text-center">
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt={businessName} className="h-16 w-16 rounded-2xl object-cover shadow-card" />
+        <img src={logoUrl} alt={businessName} className="h-16 w-16 rounded-2xl object-cover shadow-soft" />
       ) : (
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600 text-2xl font-bold text-white shadow-card">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-2xl font-bold text-white shadow-soft">
           {businessName.charAt(0).toUpperCase()}
         </div>
       )}
-      <h1 className="mt-4 text-xl font-semibold text-foreground">{businessName}</h1>
+      <h1 className="mt-4 font-heading text-xl font-bold tracking-tight text-foreground">{businessName}</h1>
       <p className="mt-1 text-base text-ink-500">How was your experience?</p>
       {description && <p className="mt-2 max-w-sm text-sm text-ink-400">{description}</p>}
 
@@ -38,7 +38,7 @@ export function LanguageStep({
           <button
             key={l.code}
             onClick={() => onSelect(l.code)}
-            className="rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-brand-400 hover:bg-brand-50"
+            className="rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground shadow-card transition-all hover:-translate-y-0.5 hover:border-brand-400 hover:bg-brand-50 hover:shadow-soft active:translate-y-0"
           >
             {l.native}
           </button>

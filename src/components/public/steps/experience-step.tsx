@@ -22,14 +22,16 @@ export function ExperienceStep({
 
   return (
     <div className="px-6 pt-10">
-      <h2 className="text-lg font-semibold text-foreground">What did you like about your experience?</h2>
+      <h2 className="font-heading text-lg font-bold tracking-tight text-foreground">What did you like about your experience?</h2>
       <div className="mt-4 flex flex-wrap gap-2">
         {attributes.map((a) => (
           <button
             key={a.id}
             onClick={() => toggle(a.label)}
-            className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              selected.includes(a.label) ? "border-brand-500 bg-brand-50 text-brand-700" : "border-border text-ink-600"
+            className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all ${
+              selected.includes(a.label)
+                ? "border-brand-600 bg-brand-600 text-white shadow-soft"
+                : "border-border text-ink-600 hover:border-brand-300 hover:bg-brand-50"
             }`}
           >
             {a.label}

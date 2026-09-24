@@ -142,9 +142,11 @@ export function ReviewFlow({
 
         {step === "done" && (
           <div className="flex flex-col items-center px-6 pt-16 text-center">
-            <CheckCircle2 className="text-emerald-500" size={40} />
-            <h2 className="mt-4 text-lg font-semibold text-foreground">Thank you for sharing your experience!</h2>
-            <p className="mt-1 text-sm text-ink-500">Your feedback helps {business.name} grow.</p>
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
+              <CheckCircle2 size={34} />
+            </div>
+            <h2 className="mt-5 font-heading text-xl font-bold tracking-tight text-foreground">Thank you for sharing your experience!</h2>
+            <p className="mt-1.5 text-sm text-ink-500">Your feedback helps {business.name} grow.</p>
           </div>
         )}
 
