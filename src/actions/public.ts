@@ -12,6 +12,25 @@ function asProviderEnum(name: string): PrismaAIProviderName {
 
 const MAX_AI_ACTIONS_PER_SESSION = 12;
 
+export async function getPublicPlans() {
+  return prisma.plan.findMany({
+    where: { isActive: true },
+    orderBy: { monthlyPrice: "asc" },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      monthlyPrice: true,
+      yearlyPrice: true,
+      businessLimit: true,
+      campaignLimit: true,
+      aiGenerationsPerMonth: true,
+      teamMemberLimit: true,
+      advancedInsights: true,
+    },
+  });
+}
+
 export async function getCampaignBySlug(slug: string) {
   const campaign = await prisma.reviewCampaign.findUnique({
     where: { slug },

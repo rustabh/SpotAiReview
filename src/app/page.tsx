@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -13,11 +14,21 @@ import {
   Languages,
   Building2,
   CheckCircle2,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/brand/logo";
 import { LogoMark } from "@/components/brand/logo-mark";
+import { getPublicPlans } from "@/actions/public";
+
+type PublicPlan = Awaited<ReturnType<typeof getPublicPlans>>[number];
+
+function formatRupees(paise: number) {
+  const rupees = paise / 100;
+  if (rupees === 0) return "Free";
+  return `₹${rupees.toLocaleString("en-IN")}`;
+}
 
 const CATEGORIES = [
   "Restaurants", "Salons", "Clinics", "Hotels", "Retail", "Agencies",
@@ -58,12 +69,21 @@ function Reveal({ children, className }: { children: React.ReactNode; className?
 }
 
 export default function Home() {
+  const [plans, setPlans] = useState<PublicPlan[] | null>(null);
+
+  useEffect(() => {
+    getPublicPlans().then(setPlans).catch(() => setPlans([]));
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Logo size={30} wordmarkClassName="text-sm" />
           <div className="flex items-center gap-2">
+            <a href="#pricing" className="hidden text-sm font-medium text-ink-500 hover:text-foreground sm:inline-flex">
+              <span className="rounded-full px-3 py-1.5">Pricing</span>
+            </a>
             <Link href="/about" className="hidden text-sm font-medium text-ink-500 hover:text-foreground sm:inline-flex">
               <span className="rounded-full px-3 py-1.5">About</span>
             </Link>
@@ -224,6 +244,58 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section id="pricing" className="mx-auto max-w-6xl px-6 py-24">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <motion.h2 variants={revealItem} className="font-heading text-3xl font-bold tracking-tight text-foreground">Simple pricing, every plan includes AI</motion.h2>
+          <motion.p variants={revealItem} className="mt-3 text-ink-500">Start free. Upgrade only when you need more businesses, campaigns, or AI reviews.</motion.p>
+        </Reveal>
+
+        {plans === null ? (
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-80 animate-pulse rounded-3xl border border-border bg-ink-50 dark:bg-ink-900/40" />
+            ))}
+          </div>
+        ) : (
+          <Reveal className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {plans.map((plan) => {
+              const popular = plan.slug === "pro";
+              return (
+                <motion.div key={plan.id} variants={revealItem} whileHover={{ y: -4 }} className="relative">
+                  {popular && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white shadow-soft">
+                      Most Popular
+                    </span>
+                  )}
+                  <Card className={`h-full p-6 ${popular ? "border-brand-300 shadow-glow" : ""}`}>
+                    <h3 className="font-heading text-lg font-bold text-foreground">{plan.name}</h3>
+                    <p className="mt-3 font-heading text-3xl font-bold text-foreground">
+                      {formatRupees(plan.monthlyPrice)}
+                      {plan.monthlyPrice > 0 && <span className="text-sm font-medium text-ink-400">/mo</span>}
+                    </p>
+                    <ul className="mt-5 space-y-2.5 text-sm text-ink-600">
+                      <li className="flex items-start gap-2"><Check size={15} className="mt-0.5 shrink-0 text-brand-600" /> {plan.businessLimit} business{plan.businessLimit === 1 ? "" : "es"}</li>
+                      <li className="flex items-start gap-2"><Check size={15} className="mt-0.5 shrink-0 text-brand-600" /> {plan.campaignLimit} QR campaigns</li>
+                      <li className="flex items-start gap-2"><Check size={15} className="mt-0.5 shrink-0 text-brand-600" /> {plan.aiGenerationsPerMonth.toLocaleString("en-IN")} AI reviews/mo</li>
+                      <li className="flex items-start gap-2"><Check size={15} className="mt-0.5 shrink-0 text-brand-600" /> {plan.teamMemberLimit} team member{plan.teamMemberLimit === 1 ? "" : "s"}</li>
+                      {plan.advancedInsights && (
+                        <li className="flex items-start gap-2"><Check size={15} className="mt-0.5 shrink-0 text-brand-600" /> Advanced AI insights</li>
+                      )}
+                    </ul>
+                    <Link href="/register" className="mt-6 block">
+                      <Button className="w-full" variant={popular ? "primary" : "outline"}>
+                        {plan.monthlyPrice === 0 ? "Start Free" : "Get Started"}
+                      </Button>
+                    </Link>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </Reveal>
+        )}
+      </section>
+
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-6 py-24">
         <Reveal>
@@ -254,7 +326,10 @@ export default function Home() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
           <Logo size={24} wordmarkClassName="text-xs" tagline={false} />
-          <Link href="/about" className="text-xs font-medium text-ink-500 hover:text-foreground">About Us</Link>
+          <div className="flex items-center gap-4">
+            <a href="#pricing" className="text-xs font-medium text-ink-500 hover:text-foreground">Pricing</a>
+            <Link href="/about" className="text-xs font-medium text-ink-500 hover:text-foreground">About Us</Link>
+          </div>
           <p className="flex items-center gap-1.5 text-xs text-ink-400"><ShieldCheck size={13} /> Powered by Febble Spot</p>
         </div>
       </footer>
