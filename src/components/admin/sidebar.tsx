@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ADMIN_NAV_ITEMS } from "./nav-items";
 import { logoutAction } from "@/actions/session";
@@ -26,12 +27,19 @@ export function AdminSidebar({ userName }: { userName: string }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all",
-                active ? "bg-ink-900 text-white shadow-soft" : "text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800"
+                "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                active ? "text-white" : "text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800"
               )}
             >
-              <Icon size={17} />
-              {item.label}
+              {active && (
+                <motion.span
+                  layoutId="admin-sidebar-active-pill"
+                  className="absolute inset-0 rounded-xl bg-ink-900 shadow-soft"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                />
+              )}
+              <Icon size={17} className="relative" />
+              <span className="relative">{item.label}</span>
             </Link>
           );
         })}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { generateAIDrafts, transformDraft, markDraftCopied, recordGoogleClick, addMoreFeedbackDetail } from "@/actions/public";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
@@ -108,22 +109,52 @@ export function AiReviewStep({
   if (loading) {
     return (
       <div className="flex flex-col items-center px-6 pt-16 text-center">
-        <Sparkles className="animate-pulse text-brand-600" size={28} />
-        <p className="mt-3 text-sm font-medium text-foreground">Let&apos;s turn your experience into a review…</p>
+        <div className="relative flex h-16 w-16 items-center justify-center">
+          <motion.span
+            className="absolute inset-0 rounded-full bg-brand-500/20"
+            animate={{ scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
+            transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+          />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 2.5, ease: "linear" }}
+            className="relative flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-soft"
+          >
+            <Sparkles size={20} />
+          </motion.div>
+        </div>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="mt-4 text-sm font-medium text-foreground"
+        >
+          Let&apos;s turn your experience into a review…
+        </motion.p>
+        <div className="mt-3 flex gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              className="h-1.5 w-1.5 rounded-full bg-brand-400"
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ repeat: Infinity, duration: 1.1, delay: i * 0.18 }}
+            />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (needMoreInfo) {
     return (
-      <div className="px-6 pt-14">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-6 pt-14">
         <h2 className="font-heading text-lg font-bold tracking-tight text-foreground">Would you like to tell us a little more about your experience?</h2>
         <p className="mt-1 text-sm text-ink-500">A few more words help us write a genuine review that sounds like you.</p>
         <Textarea rows={4} className="mt-4" value={extraDetail} onChange={(e) => setExtraDetail(e.target.value)} placeholder="Example: The staff was friendly and fixed the issue quickly." />
         <Button className="mt-4 w-full" size="lg" style={{ backgroundColor: buttonColor }} loading={submittingDetail} disabled={!extraDetail.trim()} onClick={submitMoreDetail}>
           Generate My Review
         </Button>
-      </div>
+      </motion.div>
     );
   }
 
@@ -136,7 +167,7 @@ export function AiReviewStep({
   }
 
   return (
-    <div className="px-6 pt-8">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-6 pt-8">
       <h2 className="font-heading text-lg font-bold tracking-tight text-foreground">Let&apos;s turn your experience into a review.</h2>
 
       <div className="mt-4 flex gap-2 overflow-x-auto no-scrollbar">
@@ -144,23 +175,38 @@ export function AiReviewStep({
           <button
             key={d.id}
             onClick={() => selectDraft(d)}
-            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
-              activeId === d.id ? "border-brand-600 bg-brand-600 text-white shadow-soft" : "border-border text-ink-500 hover:border-brand-300"
+            className={`relative shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+              activeId === d.id ? "text-white" : "border border-border text-ink-500 hover:border-brand-300"
             }`}
           >
-            {VARIANT_LABELS[d.variant] ?? d.variant}
+            {activeId === d.id && (
+              <motion.span
+                layoutId="draft-tab-pill"
+                className="absolute inset-0 rounded-full bg-brand-600 shadow-soft"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            <span className="relative">{VARIANT_LABELS[d.variant] ?? d.variant}</span>
           </button>
         ))}
       </div>
 
-      <Textarea
-        rows={6}
-        className="mt-4 shadow-card"
-        value={content}
-        onChange={(e) => { setContent(e.target.value); setCopied(false); }}
-      />
+      <AnimatePresence mode="wait">
+        <motion.div key={activeId} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+          <Textarea
+            rows={6}
+            className="mt-4 shadow-card"
+            value={content}
+            onChange={(e) => { setContent(e.target.value); setCopied(false); }}
+          />
+        </motion.div>
+      </AnimatePresence>
 
-      {error && <Alert tone="error" className="mt-3">{error}</Alert>}
+      {error && (
+        <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
+          <Alert tone="error" className="mt-3">{error}</Alert>
+        </motion.div>
+      )}
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Button size="sm" variant="outline" loading={actionLoading === "REGENERATE"} onClick={() => applyTransform("REGENERATE")}><RefreshCw size={13} /> Regenerate</Button>
@@ -172,7 +218,17 @@ export function AiReviewStep({
       <p className="mt-4 text-sm font-medium text-foreground">Happy with your review?</p>
       <div className="mt-2 flex flex-col gap-2.5">
         <Button size="lg" variant="outline" onClick={copyReview}>
-          {copied ? <Check size={15} /> : <Copy size={15} />} {copied ? "Copied!" : "Copy Review"}
+          <AnimatePresence mode="wait" initial={false}>
+            {copied ? (
+              <motion.span key="copied" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} className="flex items-center gap-2">
+                <Check size={15} /> Copied!
+              </motion.span>
+            ) : (
+              <motion.span key="copy" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} className="flex items-center gap-2">
+                <Copy size={15} /> Copy Review
+              </motion.span>
+            )}
+          </AnimatePresence>
         </Button>
         {hasGoogleUrl ? (
           <Button size="lg" style={{ backgroundColor: buttonColor }} loading={opening} onClick={openGoogle}>
@@ -182,6 +238,6 @@ export function AiReviewStep({
           <Alert tone="info">This business hasn&apos;t connected a Google review link yet — you can still copy your review.</Alert>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
