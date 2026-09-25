@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { registerSchema, forgotPasswordSchema, resetPasswordSchema } from "@/lib/validations/auth";
+import { sendEmail, passwordResetEmail, welcomeEmail } from "@/lib/email";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
@@ -42,16 +43,17 @@ export async function registerBusinessOwner(input: unknown): Promise<ActionResul
     });
   }
 
+  await sendEmail({ to: user.email, subject: "Welcome to AiReview", html: welcomeEmail(user.name) });
+
   return { ok: true, data: { userId: user.id } };
 }
 
 /**
- * No transactional email provider is configured yet, so for this MVP the
- * reset link is returned directly to the caller (shown on-screen) instead of
- * emailed. Swapping in a real mail provider only requires sending `resetUrl`
- * instead of returning it.
+ * The reset link is only ever emailed to the account's own address — never
+ * returned to the caller — so requesting a reset for an email you don't own
+ * can't be used to hijack that account.
  */
-export async function requestPasswordReset(input: unknown): Promise<ActionResult<{ resetUrl: string } | null>> {
+export async function requestPasswordReset(input: unknown): Promise<ActionResult<null>> {
   const parsed = forgotPasswordSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Enter a valid email" };
 
@@ -64,7 +66,9 @@ export async function requestPasswordReset(input: unknown): Promise<ActionResult
   });
 
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/reset-password?token=${token}`;
-  return { ok: true, data: { resetUrl } };
+  await sendEmail({ to: user.email, subject: "Reset your AiReview password", html: passwordResetEmail(resetUrl) });
+
+  return { ok: true, data: null };
 }
 
 export async function resetPassword(input: unknown): Promise<ActionResult> {

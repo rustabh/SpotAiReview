@@ -10,17 +10,15 @@ import { Alert } from "@/components/ui/alert";
 
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
-  const [resetUrl, setResetUrl] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.currentTarget);
-    const result = await requestPasswordReset({ email: String(formData.get("email") ?? "") });
+    await requestPasswordReset({ email: String(formData.get("email") ?? "") });
     setLoading(false);
     setSubmitted(true);
-    if (result.ok && result.data) setResetUrl(result.data.resetUrl);
   }
 
   return (
@@ -31,18 +29,9 @@ export default function ForgotPasswordPage() {
       </CardHeader>
       <CardContent>
         {submitted ? (
-          <div className="space-y-3">
-            <Alert tone="success">
-              If an account exists for that email, a reset link has been created.
-            </Alert>
-            {resetUrl && (
-              <Alert tone="info">
-                No email service is configured in this environment, so here is your reset link:
-                <br />
-                <Link href={resetUrl} className="font-medium underline break-all">{resetUrl}</Link>
-              </Alert>
-            )}
-          </div>
+          <Alert tone="success">
+            If an account exists for that email, we&apos;ve sent a password reset link to it. Check your inbox.
+          </Alert>
         ) : (
           <form onSubmit={onSubmit} className="space-y-4">
             <div>

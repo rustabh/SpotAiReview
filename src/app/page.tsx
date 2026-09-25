@@ -329,10 +329,12 @@ export default function Home() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
           <Logo size={24} wordmarkClassName="text-xs" tagline={false} />
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <a href="#pricing" className="text-xs font-medium text-ink-500 hover:text-foreground">Pricing</a>
             <Link href="/blog" className="text-xs font-medium text-ink-500 hover:text-foreground">Blog</Link>
             <Link href="/about" className="text-xs font-medium text-ink-500 hover:text-foreground">About Us</Link>
+            <Link href="/terms" className="text-xs font-medium text-ink-500 hover:text-foreground">Terms</Link>
+            <Link href="/privacy" className="text-xs font-medium text-ink-500 hover:text-foreground">Privacy</Link>
           </div>
           <p className="flex items-center gap-1.5 text-xs text-ink-400"><ShieldCheck size={13} /> Powered by Febble Spot</p>
         </div>

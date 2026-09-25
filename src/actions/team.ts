@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireBusinessAccess } from "@/lib/rbac";
+import { sendEmail, teamInviteEmail } from "@/lib/email";
 import type { ActionResult } from "./auth";
 
 export async function inviteTeamMember(businessId: string, email: string, role: "MANAGER" | "STAFF"): Promise<ActionResult> {
@@ -17,9 +18,19 @@ export async function inviteTeamMember(businessId: string, email: string, role: 
   const existing = await prisma.businessMember.findUnique({ where: { userId_businessId: { userId: user.id, businessId } } });
   if (existing) return { ok: false, error: "This person is already on your team." };
 
+  const business = await prisma.business.findUnique({ where: { id: businessId }, select: { name: true } });
+
   await prisma.businessMember.create({
     data: { userId: user.id, businessId, role, acceptedAt: new Date() },
   });
+
+  if (business) {
+    await sendEmail({
+      to: user.email,
+      subject: `You've been added to ${business.name} on AiReview`,
+      html: teamInviteEmail(business.name, role),
+    });
+  }
 
   revalidatePath("/dashboard/team");
   return { ok: true, data: undefined };

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSuperAdmin } from "@/lib/rbac";
 import { createBusinessOwnerSchema, categorySchema } from "@/lib/validations/auth";
 import { slugify } from "@/lib/utils";
+import { sendEmail, businessOwnerCreatedEmail } from "@/lib/email";
 import type { Prisma } from "@prisma/client";
 import type { ActionResult } from "./auth";
 
@@ -35,6 +36,11 @@ export async function createBusinessOwner(input: unknown): Promise<ActionResult<
   }
 
   await audit(admin.id, "CREATE_BUSINESS_OWNER", "User", user.id, { email: user.email });
+  await sendEmail({
+    to: user.email,
+    subject: "Your AiReview account is ready",
+    html: businessOwnerCreatedEmail(user.name, user.email, password),
+  });
   revalidatePath("/admin/owners");
   return { ok: true, data: { userId: user.id, temporaryPassword: password } };
 }
