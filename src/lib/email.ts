@@ -94,3 +94,12 @@ export function paymentConfirmationEmail(amountPaise: number, currency: string, 
     <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard/subscription" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">View Subscription</a>
   `;
 }
+
+export function teamInviteNewUserEmail(businessName: string, role: string, acceptUrl: string) {
+  return `
+    <p style="margin:0 0 16px;">You've been invited to join <strong>${businessName}</strong> on AiReview as a <strong>${role.toLowerCase()}</strong>.</p>
+    <p style="margin:0 0 24px;">Create your account to accept the invite — it only takes a minute.</p>
+    <a href="${acceptUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Accept Invite</a>
+    <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;">This invite expires in 7 days.</p>
+  `;
+}

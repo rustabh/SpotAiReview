@@ -9,9 +9,10 @@ import crypto from "crypto";
 export async function loginAction(_prevState: unknown, formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const next = String(formData.get("next") ?? "/dashboard");
 
   try {
-    await signIn("credentials", { email, password, redirectTo: "/dashboard" });
+    await signIn("credentials", { email, password, redirectTo: next.startsWith("/") ? next : "/dashboard" });
     return { error: undefined };
   } catch (error) {
     if (error instanceof AuthError) {

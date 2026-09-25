@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/rbac";
 import { listMyBusinesses } from "@/actions/business";
+import { listPendingInvites } from "@/actions/team";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,7 @@ export default async function TeamPage() {
     businesses.map(async (b) => ({
       business: b,
       members: await prisma.businessMember.findMany({ where: { businessId: b.id }, include: { user: true }, orderBy: { role: "asc" } }),
+      invites: await listPendingInvites(b.id),
     }))
   );
 
@@ -31,13 +33,13 @@ export default async function TeamPage() {
     <div>
       <PageHeader title="Team" description="Owners see everything. Managers can manage campaigns and analytics. Staff can only view feedback." />
       <div className="space-y-6">
-        {businessesWithMembers.map(({ business, members }) => {
+        {businessesWithMembers.map(({ business, members, invites }) => {
           const myMembership = members.find((m) => m.user.id === user.id);
           return (
             <Card key={business.id}>
               <CardHeader><CardTitle>{business.name}</CardTitle></CardHeader>
               <CardContent>
-                <TeamManager businessId={business.id} members={members} canManage={myMembership?.role === "OWNER"} />
+                <TeamManager businessId={business.id} members={members} invites={invites} canManage={myMembership?.role === "OWNER"} />
               </CardContent>
             </Card>
           );

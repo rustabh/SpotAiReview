@@ -148,6 +148,7 @@ model User {
   auditLogs               AuditLog[]              @relation("AuditActor")
   createdCategories       BusinessCategory[]      @relation("CategoryCreator")
   createdBusinesses       Business[]              @relation("BusinessCreator")
+  sentTeamInvites         TeamInvite[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -202,6 +203,27 @@ model BusinessMember {
 
   @@unique([userId, businessId])
   @@index([businessId])
+}
+
+// A pending invite for someone who doesn't have an AiReview account yet.
+// Once they accept (creating an account in the process), this becomes a
+// BusinessMember row and the invite is marked accepted.
+model TeamInvite {
+  id           String    @id @default(uuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  email        String
+  role         BusinessMemberRole @default(STAFF)
+  token        String    @unique
+  invitedById  String
+  invitedBy    User      @relation(fields: [invitedById], references: [id])
+  acceptedAt   DateTime?
+  revokedAt    DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+
+  @@index([businessId])
+  @@index([email])
 }
 
 // ---------------------------------------------------------------------------
@@ -300,6 +322,7 @@ model Business {
   createdBy   User   @relation("BusinessCreator", fields: [createdById], references: [id])
 
   members            BusinessMember[]
+  teamInvites        TeamInvite[]
   services           BusinessService[]
   campaigns          ReviewCampaign[]
   feedback           CustomerFeedback[]

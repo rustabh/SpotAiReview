@@ -2,16 +2,27 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { inviteTeamMember, removeTeamMember } from "@/actions/team";
+import { inviteTeamMember, removeTeamMember, revokeInvite } from "@/actions/team";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
-import { UserMinus } from "lucide-react";
+import { UserMinus, Mail, X } from "lucide-react";
 
 type Member = { id: string; role: string; user: { id: string; name: string; email: string } };
+type Invite = { id: string; email: string; role: string; expiresAt: string | Date };
 
-export function TeamManager({ businessId, members, canManage }: { businessId: string; members: Member[]; canManage: boolean }) {
+export function TeamManager({
+  businessId,
+  members,
+  invites,
+  canManage,
+}: {
+  businessId: string;
+  members: Member[];
+  invites: Invite[];
+  canManage: boolean;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
@@ -29,13 +40,18 @@ export function TeamManager({ businessId, members, canManage }: { businessId: st
       setError(result.error);
       return;
     }
-    setSuccess("Team member added.");
+    setSuccess("Invite sent.");
     (e.target as HTMLFormElement).reset();
     router.refresh();
   }
 
   async function onRemove(memberId: string) {
     await removeTeamMember(businessId, memberId);
+    router.refresh();
+  }
+
+  async function onRevoke(inviteId: string) {
+    await revokeInvite(inviteId, businessId);
     router.refresh();
   }
 
@@ -59,6 +75,29 @@ export function TeamManager({ businessId, members, canManage }: { businessId: st
           </li>
         ))}
       </ul>
+
+      {invites.length > 0 && (
+        <div className="rounded-xl border border-dashed border-border p-3">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-400">
+            <Mail size={12} /> Pending invites
+          </p>
+          <ul className="divide-y divide-border">
+            {invites.map((inv) => (
+              <li key={inv.id} className="flex items-center justify-between py-2">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{inv.email}</p>
+                  <p className="text-xs text-ink-400">Invited as {inv.role.toLowerCase()} · expires {new Date(inv.expiresAt).toLocaleDateString()}</p>
+                </div>
+                {canManage && (
+                  <button onClick={() => onRevoke(inv.id)} className="rounded-lg p-1.5 text-ink-400 hover:bg-red-50 hover:text-red-600" title="Revoke invite">
+                    <X size={14} />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {canManage && (
         <form onSubmit={onInvite} className="flex flex-wrap items-end gap-2 rounded-xl border border-border p-3">
