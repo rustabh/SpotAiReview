@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { authConfig } from "./auth.config";
 import { prisma } from "./prisma";
+import { rateLimit } from "./rate-limit";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -18,8 +19,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = credentials?.password as string | undefined;
         if (!email || !password) return null;
 
+        const normalizedEmail = email.toLowerCase().trim();
+        const limit = rateLimit(`login:${normalizedEmail}`, 8, 10 * 60 * 1000);
+        if (!limit.allowed) return null;
+
         const user = await prisma.user.findUnique({
-          where: { email: email.toLowerCase().trim() },
+          where: { email: normalizedEmail },
         });
         if (!user) return null;
         if (user.status === "SUSPENDED") return null;

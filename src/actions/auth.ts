@@ -5,12 +5,17 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { registerSchema, forgotPasswordSchema, resetPasswordSchema } from "@/lib/validations/auth";
 import { sendEmail, passwordResetEmail, welcomeEmail } from "@/lib/email";
+import { rateLimit, requestIp, retryAfterMessage } from "@/lib/rate-limit";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
   | { ok: false; error: string };
 
 export async function registerBusinessOwner(input: unknown): Promise<ActionResult<{ userId: string }>> {
+  const ip = await requestIp();
+  const limit = rateLimit(`register:${ip}`, 5, 60 * 60 * 1000);
+  if (!limit.allowed) return { ok: false, error: retryAfterMessage(limit.retryAfterMs) };
+
   const parsed = registerSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -54,6 +59,10 @@ export async function registerBusinessOwner(input: unknown): Promise<ActionResul
  * can't be used to hijack that account.
  */
 export async function requestPasswordReset(input: unknown): Promise<ActionResult<null>> {
+  const ip = await requestIp();
+  const limit = rateLimit(`reset:${ip}`, 5, 15 * 60 * 1000);
+  if (!limit.allowed) return { ok: false, error: retryAfterMessage(limit.retryAfterMs) };
+
   const parsed = forgotPasswordSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Enter a valid email" };
 
@@ -72,6 +81,10 @@ export async function requestPasswordReset(input: unknown): Promise<ActionResult
 }
 
 export async function resetPassword(input: unknown): Promise<ActionResult> {
+  const ip = await requestIp();
+  const limit = rateLimit(`reset-confirm:${ip}`, 10, 15 * 60 * 1000);
+  if (!limit.allowed) return { ok: false, error: retryAfterMessage(limit.retryAfterMs) };
+
   const parsed = resetPasswordSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid input" };
 

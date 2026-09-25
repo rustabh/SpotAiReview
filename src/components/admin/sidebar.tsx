@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ADMIN_NAV_ITEMS } from "./nav-items";
 import { logoutAction } from "@/actions/session";
 import { Logo } from "@/components/brand/logo";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LogOut, ShieldCheck } from "lucide-react";
 
 export function AdminSidebar({ userName }: { userName: string }) {
@@ -39,11 +40,14 @@ export function AdminSidebar({ userName }: { userName: string }) {
       <div className="border-t border-border p-3">
         <div className="flex items-center justify-between rounded-xl px-3 py-2">
           <p className="truncate text-sm font-medium text-foreground">{userName}</p>
-          <form action={logoutAction}>
-            <button type="submit" className="rounded-lg p-2 text-ink-400 hover:bg-ink-100 hover:text-ink-700" title="Log out">
-              <LogOut size={16} />
-            </button>
-          </form>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <form action={logoutAction}>
+              <button type="submit" className="rounded-lg p-2 text-ink-400 hover:bg-ink-100 hover:text-ink-700" title="Log out">
+                <LogOut size={16} />
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </aside>

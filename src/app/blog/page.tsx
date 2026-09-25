@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ShieldCheck, Clock } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { listPublishedBlogPosts } from "@/actions/blog";
@@ -33,6 +34,7 @@ export default async function BlogIndexPage() {
             <Link href="/about" className="hidden text-sm font-medium text-ink-500 hover:text-foreground sm:inline-flex">
               <span className="rounded-full px-3 py-1.5">About</span>
             </Link>
+            <ThemeToggle />
             <Link href="/login"><Button variant="ghost" size="sm">Log in</Button></Link>
             <Link href="/register"><Button size="sm">Get Started Free</Button></Link>
           </div>

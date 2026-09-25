@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   QrCode,
@@ -15,12 +15,14 @@ import {
   Building2,
   CheckCircle2,
   Check,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/brand/logo";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { getPublicPlans } from "@/actions/public";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 type PublicPlan = Awaited<ReturnType<typeof getPublicPlans>>[number];
 
@@ -51,6 +53,33 @@ const FEATURES = [
   { icon: ShieldCheck, title: "Private Feedback, Always Honest", desc: "Low ratings never get hidden — customers can send private feedback straight to the business." },
 ];
 
+const FAQS = [
+  {
+    q: "Does the AI ever write fake reviews?",
+    a: "No. The AI only ever rewords what a real customer typed — their star rating, selected tags, and their own written words. It's explicitly instructed to never invent facts, names, or claims the customer didn't provide, and the customer always reviews, edits, and posts the final review themselves.",
+  },
+  {
+    q: "Do I need a Google Business Profile to use AiReview?",
+    a: "You'll need your Google review link (from your Google Business Profile) so we can send happy customers to the right place. If you don't have one set up yet, you can still collect and manage feedback in your dashboard while you get it sorted.",
+  },
+  {
+    q: "Is the free plan actually free, forever?",
+    a: "Yes — the Free plan has no time limit and no credit card required. It includes 1 business, 2 QR campaigns, and 50 AI-assisted reviews a month, which is enough for most small businesses to get started.",
+  },
+  {
+    q: "QR code or NFC — which one should I use?",
+    a: "QR codes are free to print and work on every phone, making them the best default for tables, receipts, and packaging. NFC tags cost a bit more per unit but feel more premium for a single high-traffic spot like a reception desk. Many businesses use both — a single campaign supports either.",
+  },
+  {
+    q: "Can I switch plans or cancel anytime?",
+    a: "Yes, there's no lock-in contract. You can upgrade, downgrade, or cancel your plan at any time from your dashboard.",
+  },
+  {
+    q: "What happens to feedback from unhappy customers?",
+    a: "Customers who give a lower rating are routed to a private feedback form that comes straight to you — never a public review page. This means you can resolve real issues directly instead of them turning into a public 1-star review, while still hearing every piece of honest feedback.",
+  },
+];
+
 const revealContainer = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 const revealItem = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } } };
 
@@ -64,6 +93,36 @@ function Reveal({ children, className }: { children: React.ReactNode; className?
       className={className}
     >
       {children}
+    </motion.div>
+  );
+}
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <motion.div variants={revealItem} className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+      >
+        <span className="font-heading font-semibold text-foreground">{q}</span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0 text-ink-400">
+          <ChevronDown size={18} />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden"
+          >
+            <p className="px-5 pb-4 text-sm leading-relaxed text-ink-500">{a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -90,6 +149,7 @@ export default function Home() {
             <Link href="/about" className="hidden text-sm font-medium text-ink-500 hover:text-foreground sm:inline-flex">
               <span className="rounded-full px-3 py-1.5">About</span>
             </Link>
+            <ThemeToggle />
             <Link href="/login">
               <Button variant="ghost" size="sm">Log in</Button>
             </Link>
@@ -297,6 +357,36 @@ export default function Home() {
             })}
           </Reveal>
         )}
+      </section>
+
+      {/* FAQ */}
+      <section className="border-t border-border bg-ink-50/60 py-24 dark:bg-ink-900/40">
+        <div className="mx-auto max-w-3xl px-6">
+          <Reveal className="text-center">
+            <motion.h2 variants={revealItem} className="font-heading text-3xl font-bold tracking-tight text-foreground">Frequently asked questions</motion.h2>
+            <motion.p variants={revealItem} className="mt-3 text-ink-500">Everything else you might be wondering about.</motion.p>
+          </Reveal>
+          <Reveal className="mt-10 space-y-3">
+            {FAQS.map((item) => (
+              <FaqItem key={item.q} q={item.q} a={item.a} />
+            ))}
+          </Reveal>
+        </div>
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: FAQS.map((item) => ({
+                "@type": "Question",
+                name: item.q,
+                acceptedAnswer: { "@type": "Answer", text: item.a },
+              })),
+            }),
+          }}
+        />
       </section>
 
       {/* CTA */}

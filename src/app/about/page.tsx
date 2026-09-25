@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/brand/logo";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const VALUES = [
   {
@@ -68,6 +69,7 @@ export default function AboutPage() {
             <Link href="/" className="hidden text-sm font-medium text-ink-500 hover:text-foreground sm:inline-flex">
               <span className="rounded-full px-3 py-1.5">Home</span>
             </Link>
+            <ThemeToggle />
             <Link href="/login">
               <Button variant="ghost" size="sm">Log in</Button>
             </Link>

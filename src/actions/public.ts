@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { AIProviderName as PrismaAIProviderName } from "@prisma/client";
 import { logEvent } from "@/lib/analytics";
 import { getAIProvider, estimateCostUsd, hasEnoughSignal, type AIGroundingContext, type TransformInstruction } from "@/lib/ai";
+import { rateLimit, requestIp } from "@/lib/rate-limit";
 import type { ActionResult } from "./auth";
 
 function asProviderEnum(name: string): PrismaAIProviderName {
@@ -62,6 +63,10 @@ export async function startOrResumeSession(input: {
       return { ok: true as const, sessionId: existing.id, campaign };
     }
   }
+
+  const ip = await requestIp();
+  const limit = rateLimit(`session:${ip}`, 40, 60 * 60 * 1000);
+  if (!limit.allowed) return { ok: false as const, error: "Too many requests — please try again in a little while." };
 
   const session = await prisma.customerSession.create({
     data: {
