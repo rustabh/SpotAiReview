@@ -84,3 +84,13 @@ export function teamInviteEmail(businessName: string, role: string) {
     <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Open Dashboard</a>
   `;
 }
+
+export function paymentConfirmationEmail(amountPaise: number, currency: string, planName: string) {
+  const amount = (amountPaise / 100).toLocaleString("en-IN");
+  return `
+    <p style="margin:0 0 16px;">Thanks for your payment! Here's your receipt:</p>
+    <p style="margin:0 0 8px;"><strong>Plan:</strong> ${planName}</p>
+    <p style="margin:0 0 24px;"><strong>Amount:</strong> ${currency} ${amount}</p>
+    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard/subscription" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">View Subscription</a>
+  `;
+}

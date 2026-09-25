@@ -510,6 +510,7 @@ model Plan {
   isActive               Boolean  @default(true)
 
   subscriptions Subscription[]
+  payments      Payment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -539,6 +540,8 @@ model Payment {
   id             String          @id @default(uuid())
   subscriptionId String
   subscription   Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  planId         String?
+  plan           Plan?           @relation(fields: [planId], references: [id])
   amount         Int
   currency       String          @default("INR")
   status         PaymentStatus   @default(PENDING)

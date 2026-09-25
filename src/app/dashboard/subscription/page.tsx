@@ -1,5 +1,6 @@
 import { getMySubscription } from "@/actions/subscription";
 import { listAllPlans } from "@/actions/admin";
+import { isRazorpayConfigured } from "@/lib/payments/razorpay";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,13 +13,16 @@ function formatPrice(paise: number) {
 
 export default async function SubscriptionPage() {
   const [{ subscription, businessCount, campaignCount }, plans] = await Promise.all([getMySubscription(), listAllPlans()]);
+  const configured = isRazorpayConfigured();
 
   return (
     <div>
       <PageHeader title="Subscription" description="Your current plan and usage limits." />
 
-      <Alert tone="info" className="mb-6">
-        No payment gateway is connected in this environment yet — the architecture is Razorpay/Stripe-ready. Switching plans below updates your limits directly for demo purposes.
+      <Alert tone={configured ? "success" : "info"} className="mb-6">
+        {configured
+          ? "Payments are processed securely via Razorpay. Switching to a paid plan below will open a secure checkout."
+          : "No payment gateway is connected in this environment yet — switching plans below updates your limits directly for demo purposes. Paid checkout activates automatically once Razorpay keys are configured."}
       </Alert>
 
       {subscription && (
@@ -50,7 +54,7 @@ export default async function SubscriptionPage() {
                 <li>{p.advancedInsights ? "Advanced AI insights" : "Basic insights"}</li>
               </ul>
               <div className="mt-4">
-                <PlanSwitchButton planId={p.id} isCurrent={p.id === subscription?.planId} />
+                <PlanSwitchButton planId={p.id} planName={p.name} isCurrent={p.id === subscription?.planId} />
               </div>
             </CardContent>
           </Card>
