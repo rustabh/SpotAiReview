@@ -1,6 +1,6 @@
 import type { AIGroundingContext, TransformInstruction } from "./types";
 
-export const SYSTEM_PROMPT = `You are the Spot AI Review writing assistant.
+export const SYSTEM_PROMPT = `You are the AiReview writing assistant.
 
 Write a natural review based ONLY on the customer's stated experience. Do not invent facts. Do not add claims the customer did not provide. Preserve the customer's meaning. Avoid exaggerated marketing language. The review should sound like a real person wrote it.
 
@@ -76,4 +76,24 @@ ${feedbackLines || "(no written feedback yet)"}
 
 Respond with strict JSON only, in this exact shape:
 {"positiveThemes": ["..."], "improvementThemes": ["..."], "commonPhrases": ["..."], "summary": "one short paragraph"}`;
+}
+
+export function buildBlogArticlePrompt(topic: string) {
+  return `Write a comprehensive, SEO-optimized blog article for "AiReview by Febble Spot", a SaaS product that helps
+local businesses collect genuine customer feedback via QR/NFC codes and turns it into AI-assisted (never
+fabricated) Google reviews.
+
+Topic: ${topic}
+
+Requirements:
+- Around 2800-3200 words in the "content" field, written in Markdown (use ## and ### headings, bullet lists,
+  and at least one table where relevant).
+- Genuinely useful, specific, and practical — not vague filler. Include concrete steps, examples, and a short
+  FAQ section (3-4 Q&As) near the end.
+- Natural, non-stuffed use of relevant search keywords for the topic.
+- Never claim the AI writes fake reviews — always describe grounded, customer-authored, AI-assisted writing.
+- End with a short call to action linking to /register or /about (as plain markdown links).
+
+Respond with strict JSON only, in this exact shape (no markdown fences, no preamble):
+{"title": "...", "metaTitle": "... (under 60 chars)", "metaDescription": "... (under 160 chars)", "excerpt": "one or two sentence summary", "category": "one short category name", "keywords": ["...", "..."], "readingMinutes": 10, "content": "full markdown body"}`;
 }

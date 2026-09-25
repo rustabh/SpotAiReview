@@ -1,4 +1,5 @@
 import type {
+  AIBlogArticleResult,
   AIGroundingContext,
   AIGenerationResult,
   AIInsightsInput,
@@ -7,7 +8,7 @@ import type {
   AITransformInput,
   AITransformResult,
 } from "../types";
-import { SYSTEM_PROMPT, buildGenerateDraftsPrompt, buildInsightsPrompt, buildTransformPrompt } from "../prompts";
+import { SYSTEM_PROMPT, buildBlogArticlePrompt, buildGenerateDraftsPrompt, buildInsightsPrompt, buildTransformPrompt } from "../prompts";
 
 const API_URL = "https://api.anthropic.com/v1/messages";
 
@@ -26,7 +27,7 @@ export class AnthropicProvider implements AIProvider {
     this.model = model;
   }
 
-  private async messages(userPrompt: string) {
+  private async messages(userPrompt: string, maxTokens = 600) {
     const res = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -36,7 +37,7 @@ export class AnthropicProvider implements AIProvider {
       },
       body: JSON.stringify({
         model: this.model,
-        max_tokens: 600,
+        max_tokens: maxTokens,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
       }),
@@ -82,5 +83,10 @@ export class AnthropicProvider implements AIProvider {
       buildInsightsPrompt(input.businessName, input.categoryName, input.feedbackSamples)
     );
     return JSON.parse(extractJson(content)) as AIInsightsResult;
+  }
+
+  async generateBlogArticle(topic: string): Promise<AIBlogArticleResult> {
+    const { content } = await this.messages(buildBlogArticlePrompt(topic), 6000);
+    return JSON.parse(extractJson(content)) as AIBlogArticleResult;
   }
 }

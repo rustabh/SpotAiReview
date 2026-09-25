@@ -12,7 +12,7 @@ export default async function AdminOverviewPage() {
 
   return (
     <div>
-      <PageHeader title="Platform Dashboard" description="Everything happening across Spot AI Review." />
+      <PageHeader title="Platform Dashboard" description="Everything happening across AiReview." />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Total Businesses" value={overview.totalBusinesses} icon={Building2} />

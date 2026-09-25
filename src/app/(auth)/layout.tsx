@@ -16,7 +16,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="pointer-events-none absolute -bottom-32 -right-16 h-80 w-80 rounded-full bg-brand-500/15 blur-[100px]" />
 
         <Link href="/" className="relative z-10">
-          <Logo size={32} wordmarkClassName="text-base text-white" />
+          <Logo size={32} wordmarkClassName="text-base text-white" variant="light" />
         </Link>
 
         <div className="relative z-10 max-w-md">

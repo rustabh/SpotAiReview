@@ -1,4 +1,5 @@
 import type {
+  AIBlogArticleResult,
   AIGroundingContext,
   AIGenerationResult,
   AIInsightsInput,
@@ -7,6 +8,7 @@ import type {
   AITransformInput,
   AITransformResult,
 } from "../types";
+import { BLOG_SEED_POSTS } from "@/lib/blog-seed-content";
 
 /**
  * A deterministic, offline provider. It never calls out to the network, so the
@@ -148,6 +150,31 @@ export class MockAIProvider implements AIProvider {
         input.feedbackSamples.length === 0
           ? "No feedback collected yet — insights will appear once customers start responding."
           : `Based on ${input.feedbackSamples.length} responses (${positiveCount} rated 4★ or higher), ${positiveThemes[0] ?? "overall experience"} is the most frequently mentioned positive theme for ${input.businessName}.`,
+    };
+  }
+
+  /**
+   * Without a real LLM key, we can't safely generate a fresh 3,000-word
+   * article on demand. Instead we draw from a curated pool of pre-written,
+   * SEO-structured articles so the daily blog pipeline always has something
+   * genuinely useful to publish. Real OpenAI/Anthropic keys unlock true
+   * on-demand generation via the same interface.
+   */
+  async generateBlogArticle(topic: string): Promise<AIBlogArticleResult> {
+    const normalizedTopic = topic.toLowerCase();
+    const match =
+      BLOG_SEED_POSTS.find((p) => normalizedTopic.includes(p.slug.split("-")[0])) ??
+      BLOG_SEED_POSTS[Math.floor(Math.random() * BLOG_SEED_POSTS.length)];
+
+    return {
+      title: match.title,
+      metaTitle: match.metaTitle,
+      metaDescription: match.metaDescription,
+      excerpt: match.excerpt,
+      category: match.category,
+      keywords: match.keywords,
+      readingMinutes: match.readingMinutes,
+      content: match.content,
     };
   }
 }

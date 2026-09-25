@@ -1,4 +1,5 @@
 import type {
+  AIBlogArticleResult,
   AIGroundingContext,
   AIGenerationResult,
   AIInsightsInput,
@@ -7,7 +8,7 @@ import type {
   AITransformInput,
   AITransformResult,
 } from "../types";
-import { SYSTEM_PROMPT, buildGenerateDraftsPrompt, buildInsightsPrompt, buildTransformPrompt } from "../prompts";
+import { SYSTEM_PROMPT, buildBlogArticlePrompt, buildGenerateDraftsPrompt, buildInsightsPrompt, buildTransformPrompt } from "../prompts";
 
 const API_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -81,5 +82,10 @@ export class OpenAIProvider implements AIProvider {
       true
     );
     return JSON.parse(content) as AIInsightsResult;
+  }
+
+  async generateBlogArticle(topic: string): Promise<AIBlogArticleResult> {
+    const { content } = await this.chat(buildBlogArticlePrompt(topic), true);
+    return JSON.parse(content) as AIBlogArticleResult;
   }
 }

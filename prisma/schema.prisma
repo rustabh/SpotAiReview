@@ -630,3 +630,34 @@ model PlatformSettings {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ---------------------------------------------------------------------------
+// Blog (SEO content, auto-generated daily via the AI provider)
+// ---------------------------------------------------------------------------
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model BlogPost {
+  id              String         @id @default(uuid())
+  title           String
+  slug            String         @unique
+  excerpt         String
+  content         String         @db.Text // Markdown
+  coverEmoji      String         @default("✨")
+  category        String         @default("Guides")
+  keywords        Json           @default("[]")
+  metaTitle       String
+  metaDescription String
+  readingMinutes  Int            @default(8)
+  status          BlogPostStatus @default(PUBLISHED)
+  generatedBy     String         @default("mock") // AI provider name that wrote it
+  publishedAt     DateTime       @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+}

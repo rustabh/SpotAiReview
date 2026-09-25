@@ -28,7 +28,7 @@ export default function LoginPage() {
     <Card>
       <CardHeader className="flex-col items-start pb-4">
         <CardTitle className="text-xl">Welcome back</CardTitle>
-        <CardDescription>Log in to your Spot AI Review dashboard.</CardDescription>
+        <CardDescription>Log in to your AiReview dashboard.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
@@ -51,7 +51,7 @@ export default function LoginPage() {
           </Button>
         </form>
         <p className="mt-5 text-center text-sm text-ink-500">
-          New to Spot AI Review?{" "}
+          New to AiReview?{" "}
           <Link href="/register" className="font-medium text-brand-600 hover:underline">
             Create an account
           </Link>

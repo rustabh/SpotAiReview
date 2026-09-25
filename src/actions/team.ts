@@ -11,7 +11,7 @@ export async function inviteTeamMember(businessId: string, email: string, role: 
 
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (!user) {
-    return { ok: false, error: "No Spot AI Review account found for this email yet. Ask them to register first, then invite them." };
+    return { ok: false, error: "No AiReview account found for this email yet. Ask them to register first, then invite them." };
   }
 
   const existing = await prisma.businessMember.findUnique({ where: { userId_businessId: { userId: user.id, businessId } } });

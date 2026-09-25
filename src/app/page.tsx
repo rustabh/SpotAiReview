@@ -84,6 +84,9 @@ export default function Home() {
             <a href="#pricing" className="hidden text-sm font-medium text-ink-500 hover:text-foreground sm:inline-flex">
               <span className="rounded-full px-3 py-1.5">Pricing</span>
             </a>
+            <Link href="/blog" className="hidden text-sm font-medium text-ink-500 hover:text-foreground sm:inline-flex">
+              <span className="rounded-full px-3 py-1.5">Blog</span>
+            </Link>
             <Link href="/about" className="hidden text-sm font-medium text-ink-500 hover:text-foreground sm:inline-flex">
               <span className="rounded-full px-3 py-1.5">About</span>
             </Link>
@@ -328,6 +331,7 @@ export default function Home() {
           <Logo size={24} wordmarkClassName="text-xs" tagline={false} />
           <div className="flex items-center gap-4">
             <a href="#pricing" className="text-xs font-medium text-ink-500 hover:text-foreground">Pricing</a>
+            <Link href="/blog" className="text-xs font-medium text-ink-500 hover:text-foreground">Blog</Link>
             <Link href="/about" className="text-xs font-medium text-ink-500 hover:text-foreground">About Us</Link>
           </div>
           <p className="flex items-center gap-1.5 text-xs text-ink-400"><ShieldCheck size={13} /> Powered by Febble Spot</p>

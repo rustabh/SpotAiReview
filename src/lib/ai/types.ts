@@ -70,12 +70,24 @@ export interface AIInsightsResult {
   summary: string;
 }
 
+export interface AIBlogArticleResult {
+  title: string;
+  metaTitle: string;
+  metaDescription: string;
+  excerpt: string;
+  category: string;
+  keywords: string[];
+  readingMinutes: number;
+  content: string; // Markdown body
+}
+
 export interface AIProvider {
   readonly name: "OPENAI" | "ANTHROPIC" | "GEMINI" | "MOCK";
   readonly model: string;
   generateDrafts(input: AIGroundingContext): Promise<AIGenerationResult>;
   transformDraft(input: AITransformInput): Promise<AITransformResult>;
   generateInsights(input: AIInsightsInput): Promise<AIInsightsResult>;
+  generateBlogArticle(topic: string): Promise<AIBlogArticleResult>;
 }
 
 /** Minimum signal required before we let AI write anything at all. */

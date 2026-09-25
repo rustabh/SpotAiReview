@@ -94,7 +94,7 @@ export default function AboutPage() {
             We help real experiences become <span className="bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">honest reviews.</span>
           </motion.h1>
           <motion.p variants={item} className="mx-auto mt-5 max-w-2xl text-lg text-ink-500 text-balance">
-            Spot AI Review is built by Febble Spot to solve a problem every business owner knows too well —
+            AiReview is built by Febble Spot to solve a problem every business owner knows too well —
             happy customers rarely take the time to write a review, and the ones who do often don&apos;t know what to say.
           </motion.p>
         </motion.div>
@@ -117,12 +117,12 @@ export default function AboutPage() {
               </p>
               <p className="mt-3 leading-relaxed text-ink-600">
                 At the same time, we saw a growing wave of AI tools that generate reviews outright — fabricated,
-                generic, and dishonest. That&apos;s not the problem we wanted to solve. So we built Spot AI Review
+                generic, and dishonest. That&apos;s not the problem we wanted to solve. So we built AiReview
                 around a simple rule: the AI can only help someone say what they already told us, better. It can
                 never say something they didn&apos;t.
               </p>
               <p className="mt-3 leading-relaxed text-ink-600">
-                Today, Spot AI Review turns a single QR code or NFC tap into a complete feedback and review journey —
+                Today, AiReview turns a single QR code or NFC tap into a complete feedback and review journey —
                 for any kind of business, in the customer&apos;s own language — while giving owners full visibility
                 into every scan, draft, and click along the way.
               </p>
@@ -181,7 +181,7 @@ export default function AboutPage() {
                 <Sparkles size={13} /> Part of the Febble Spot ecosystem
               </p>
               <p className="mx-auto mt-4 max-w-xl leading-relaxed text-ink-600">
-                Spot AI Review is one product in the Febble Spot family, built to give local and growing businesses
+                AiReview is one product in the Febble Spot family, built to give local and growing businesses
                 the same quality of tooling that only large chains could usually afford.
               </p>
             </Card>

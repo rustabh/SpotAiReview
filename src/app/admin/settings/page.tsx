@@ -8,7 +8,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="Platform Settings" description="Global configuration for the Spot AI Review platform." />
+      <PageHeader title="Platform Settings" description="Global configuration for the AiReview platform." />
       <Card>
         <CardContent className="p-6">
           <PlatformSettingsForm settings={settings} />
