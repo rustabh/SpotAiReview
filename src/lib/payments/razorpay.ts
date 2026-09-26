@@ -71,6 +71,11 @@ export async function createRazorpayOrder(input: {
       currency: input.currency ?? "INR",
       receipt: input.receipt,
       notes: input.notes,
+      // Explicit, not left to the dashboard's default: without this, a successful checkout can
+      // leave the payment merely *authorized* rather than *captured* — the customer sees "paid",
+      // we mark the subscription active, but the authorization silently auto-voids after ~5 days
+      // and the money never actually settles. This must always be 1 for this flow.
+      payment_capture: 1,
     }),
   });
 
