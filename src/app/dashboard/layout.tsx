@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/rbac";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -16,6 +17,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <main className="flex-1 px-4 py-6 pb-24 md:px-8 md:py-8 md:pb-8">{children}</main>
       </div>
       <MobileNav />
+      <InstallPrompt />
     </div>
   );
 }
