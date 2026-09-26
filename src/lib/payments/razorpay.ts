@@ -7,6 +7,37 @@ export function isRazorpayConfigured() {
   return Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
 }
 
+export type RazorpayMode = "live" | "test" | "unconfigured";
+
+/** Razorpay key IDs are always prefixed rzp_live_ or rzp_test_ — cheap way to tell which mode is active. */
+export function getRazorpayMode(): RazorpayMode {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  if (!keyId || !process.env.RAZORPAY_KEY_SECRET) return "unconfigured";
+  return keyId.startsWith("rzp_live_") ? "live" : "test";
+}
+
+export function isRazorpayWebhookConfigured() {
+  return Boolean(process.env.RAZORPAY_WEBHOOK_SECRET);
+}
+
+/**
+ * Guards against the single most expensive mistake in this integration: live keys pointed at a
+ * non-production deployment (a preview URL, localhost) would take real customer money during
+ * testing. Only warns — it doesn't block, since URL detection here is a heuristic — but it puts
+ * a loud signal in the server logs the moment it happens.
+ */
+export function warnIfLiveKeyOnNonProductionUrl() {
+  if (getRazorpayMode() !== "live") return;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const looksNonProduction = /localhost|127\.0\.0\.1|\.vercel\.app/.test(appUrl);
+  if (looksNonProduction) {
+    console.warn(
+      `[razorpay] WARNING: RAZORPAY_KEY_ID is a LIVE key but NEXT_PUBLIC_APP_URL ("${appUrl}") looks like a ` +
+        "non-production deployment. Real charges may be created. Use a test key (rzp_test_...) here instead."
+    );
+  }
+}
+
 function authHeader() {
   const token = Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString("base64");
   return `Basic ${token}`;

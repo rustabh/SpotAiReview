@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
-import { isRazorpayConfigured, createRazorpayOrder, verifyRazorpayPaymentSignature } from "@/lib/payments/razorpay";
+import { isRazorpayConfigured, createRazorpayOrder, verifyRazorpayPaymentSignature, warnIfLiveKeyOnNonProductionUrl } from "@/lib/payments/razorpay";
 import { sendEmail, paymentConfirmationEmail } from "@/lib/email";
 import { rateLimit, requestIp, retryAfterMessage } from "@/lib/rate-limit";
 import type { ActionResult } from "./auth";
@@ -32,6 +32,8 @@ export async function createCheckoutOrder(planId: string): Promise<ActionResult<
     await switchPlanDirectly(user.id, plan.id);
     return { ok: true, data: { mode: "free", planId: plan.id } };
   }
+
+  warnIfLiveKeyOnNonProductionUrl();
 
   let subscription = await prisma.subscription.findFirst({ where: { userId: user.id }, orderBy: { createdAt: "desc" } });
   if (!subscription) {
@@ -136,6 +138,13 @@ export async function activateSubscriptionForPayment(paymentId: string) {
     subject: "Payment received — AiReview",
     html: paymentConfirmationEmail(payment.amount, payment.currency, payment.plan.name),
   });
+}
+
+/** Called from the Razorpay webhook on payment.failed so a dead order doesn't sit at PENDING forever. */
+export async function markPaymentFailedByOrderId(orderId: string) {
+  const payment = await prisma.payment.findFirst({ where: { providerRef: orderId } });
+  if (!payment || payment.status !== "PENDING") return;
+  await prisma.payment.update({ where: { id: payment.id }, data: { status: "FAILED" } });
 }
 
 async function switchPlanDirectly(userId: string, planId: string) {

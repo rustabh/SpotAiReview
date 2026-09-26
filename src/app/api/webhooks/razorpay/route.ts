@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyRazorpayWebhookSignature } from "@/lib/payments/razorpay";
-import { activateSubscriptionForPayment } from "@/actions/billing";
+import { activateSubscriptionForPayment, markPaymentFailedByOrderId } from "@/actions/billing";
 
 /**
  * Server-to-server confirmation from Razorpay — the reliable source of
@@ -26,6 +26,11 @@ export async function POST(request: Request) {
       const payment = await prisma.payment.findFirst({ where: { providerRef: orderId } });
       if (payment) await activateSubscriptionForPayment(payment.id);
     }
+  }
+
+  if (event.event === "payment.failed") {
+    const orderId: string | undefined = event.payload?.payment?.entity?.order_id;
+    if (orderId) await markPaymentFailedByOrderId(orderId);
   }
 
   return NextResponse.json({ ok: true });
