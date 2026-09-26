@@ -16,6 +16,16 @@ import {
   CheckCircle2,
   Check,
   ChevronDown,
+  UtensilsCrossed,
+  Scissors,
+  Stethoscope,
+  Hotel,
+  Store,
+  Briefcase,
+  Home as HomeIcon,
+  Dumbbell,
+  GraduationCap,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,8 +43,16 @@ function formatRupees(paise: number) {
 }
 
 const CATEGORIES = [
-  "Restaurants", "Salons", "Clinics", "Hotels", "Retail", "Agencies",
-  "Real Estate", "Gyms", "Coaching", "Auto Service",
+  { label: "Restaurants", icon: UtensilsCrossed },
+  { label: "Salons", icon: Scissors },
+  { label: "Clinics", icon: Stethoscope },
+  { label: "Hotels", icon: Hotel },
+  { label: "Retail", icon: Store },
+  { label: "Agencies", icon: Briefcase },
+  { label: "Real Estate", icon: HomeIcon },
+  { label: "Gyms", icon: Dumbbell },
+  { label: "Coaching", icon: GraduationCap },
+  { label: "Auto Service", icon: Wrench },
 ];
 
 const STEPS = [
@@ -252,14 +270,38 @@ export default function Home() {
       </section>
 
       {/* Category strip */}
-      <section className="border-y border-border bg-ink-50/60 py-8 dark:bg-ink-900/40">
+      <section className="border-y border-border bg-ink-50/60 py-14 dark:bg-ink-900/40">
         <div className="mx-auto max-w-6xl px-6">
-          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-ink-400">Built for every kind of business</p>
-          <Reveal className="flex flex-wrap justify-center gap-2">
+          <Reveal className="mx-auto max-w-xl text-center">
+            <motion.p variants={revealItem} className="text-xs font-semibold uppercase tracking-wider text-brand-600">Any business, one platform</motion.p>
+            <motion.h2 variants={revealItem} className="mt-2 font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Built for every kind of business
+            </motion.h2>
+            <motion.p variants={revealItem} className="mt-2 text-sm text-ink-500">
+              If customers walk in, call, or check out — AiReview turns that moment into a review.
+            </motion.p>
+          </Reveal>
+          <Reveal className="mt-10 flex flex-wrap justify-center gap-3">
             {CATEGORIES.map((c) => (
-              <motion.span key={c} variants={revealItem} className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm font-medium text-ink-600">{c}</motion.span>
+              <motion.span
+                key={c.label}
+                variants={revealItem}
+                whileHover={{ y: -3, scale: 1.03 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                className="flex cursor-default items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-ink-600 shadow-card transition-colors hover:border-brand-200 hover:text-brand-700 dark:hover:border-brand-800 dark:hover:text-brand-400"
+              >
+                <c.icon size={15} className="text-brand-600" />
+                {c.label}
+              </motion.span>
             ))}
-            <motion.span variants={revealItem} className="rounded-full border border-dashed border-border px-3.5 py-1.5 text-sm font-medium text-ink-400">+ more</motion.span>
+            <motion.span
+              variants={revealItem}
+              whileHover={{ y: -3, scale: 1.03 }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              className="flex cursor-default items-center rounded-full border border-dashed border-border px-4 py-2 text-sm font-medium text-ink-400"
+            >
+              + more
+            </motion.span>
           </Reveal>
         </div>
       </section>
