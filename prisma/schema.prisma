@@ -84,6 +84,72 @@ enum AnalyticsEventType {
   DRAFT_COPIED
   GOOGLE_CLICK
   PRIVATE_FEEDBACK_SUBMITTED
+  MENU_VIEWED
+  PRODUCT_VIEWED
+  CART_ITEM_ADDED
+  ORDER_PLACED
+}
+
+// ---------------------------------------------------------------------------
+// Febble Spot — Menu / Ordering / Tables / POS (additive; Spot AI Review's
+// existing models and flows above are untouched by everything below)
+// ---------------------------------------------------------------------------
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  DELIVERY
+}
+
+enum OrderStatus {
+  RECEIVED
+  ACCEPTED
+  PREPARING
+  READY
+  SERVED
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderPOSSyncStatus {
+  NOT_SYNCED
+  PENDING
+  SYNCED
+  FAILED
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  INACTIVE
+}
+
+enum TableSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum POSProviderName {
+  MOCK
+  PETPOOJA
+}
+
+enum POSConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+  AUTH_ERROR
+  SYNC_ERROR
+}
+
+enum POSSyncType {
+  MENU
+  ORDER
+}
+
+enum POSSyncResult {
+  SUCCESS
+  FAILURE
 }
 
 enum SubscriptionStatus {
@@ -130,24 +196,24 @@ enum AIProviderName {
 // ---------------------------------------------------------------------------
 
 model User {
-  id                 String     @id @default(uuid())
-  email              String     @unique
-  passwordHash       String
-  name               String
-  role               UserRole
-  status             UserStatus @default(ACTIVE)
-  emailVerified      DateTime?
-  image              String?
-  phone              String?
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String
+  name          String
+  role          UserRole
+  status        UserStatus @default(ACTIVE)
+  emailVerified DateTime?
+  image         String?
+  phone         String?
 
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
   businessMemberships     BusinessMember[]
   subscriptions           Subscription[]
   notifications           Notification[]
-  auditLogs               AuditLog[]              @relation("AuditActor")
-  createdCategories       BusinessCategory[]      @relation("CategoryCreator")
-  createdBusinesses       Business[]              @relation("BusinessCreator")
+  auditLogs               AuditLog[]               @relation("AuditActor")
+  createdCategories       BusinessCategory[]       @relation("CategoryCreator")
+  createdBusinesses       Business[]               @relation("BusinessCreator")
   sentTeamInvites         TeamInvite[]
 
   createdAt DateTime @default(now())
@@ -166,40 +232,40 @@ model EmailVerificationToken {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token     String   @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 }
 
 // Short-lived, single-use token that powers the audited "Login as Owner"
 // super-admin feature. Never a substitute for the owner's real credentials.
 model ImpersonationToken {
-  id            String    @id @default(uuid())
-  token         String    @unique
-  targetUserId  String
-  createdById   String
-  expiresAt     DateTime
-  usedAt        DateTime?
-  createdAt     DateTime  @default(now())
+  id           String    @id @default(uuid())
+  token        String    @unique
+  targetUserId String
+  createdById  String
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
 }
 
 // A BusinessMember row links a User to a Business with a role, so a single
 // business owner (User) can own/manage many businesses, and a business can
 // have a small team (owner/manager/staff) with different permissions.
 model BusinessMember {
-  id         String             @id @default(uuid())
-  userId     String
-  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  businessId String
-  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  role       BusinessMemberRole @default(STAFF)
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId  String
+  business    Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  role        BusinessMemberRole @default(STAFF)
   permissions Json?
-  invitedAt  DateTime           @default(now())
-  acceptedAt DateTime?
+  invitedAt   DateTime           @default(now())
+  acceptedAt  DateTime?
 
   @@unique([userId, businessId])
   @@index([businessId])
@@ -209,18 +275,18 @@ model BusinessMember {
 // Once they accept (creating an account in the process), this becomes a
 // BusinessMember row and the invite is marked accepted.
 model TeamInvite {
-  id           String    @id @default(uuid())
-  businessId   String
-  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  email        String
-  role         BusinessMemberRole @default(STAFF)
-  token        String    @unique
-  invitedById  String
-  invitedBy    User      @relation(fields: [invitedById], references: [id])
-  acceptedAt   DateTime?
-  revokedAt    DateTime?
-  expiresAt    DateTime
-  createdAt    DateTime  @default(now())
+  id          String             @id @default(uuid())
+  businessId  String
+  business    Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  email       String
+  role        BusinessMemberRole @default(STAFF)
+  token       String             @unique
+  invitedById String
+  invitedBy   User               @relation(fields: [invitedById], references: [id])
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime           @default(now())
 
   @@index([businessId])
   @@index([email])
@@ -231,20 +297,25 @@ model TeamInvite {
 // ---------------------------------------------------------------------------
 
 model BusinessCategory {
-  id             String   @id @default(uuid())
-  name           String
-  slug           String   @unique
-  description    String?
-  aiContext      String?  // extra context fed to the AI for this category
-  terminology    Json?    // recommended terminology / synonyms for this category
-  isCustom       Boolean  @default(false)
-  isActive       Boolean  @default(true)
-  createdById    String?
-  createdBy      User?    @relation("CategoryCreator", fields: [createdById], references: [id])
+  id              String  @id @default(uuid())
+  name            String
+  slug            String  @unique
+  description     String?
+  aiContext       String? // extra context fed to the AI for this category
+  terminology     Json? // recommended terminology / synonyms for this category
+  // Default Febble Spot module flags for businesses in this category — e.g.
+  // {"menu":true,"ordering":true,"tables":true,"pos":false,"services":false,
+  // "products":false,"appointments":false,"reviews":true,"digitalCard":true}.
+  // Read only via getEffectiveFeatures() in src/lib/features.ts.
+  defaultFeatures Json    @default("{}")
+  isCustom        Boolean @default(false)
+  isActive        Boolean @default(true)
+  createdById     String?
+  createdBy       User?   @relation("CategoryCreator", fields: [createdById], references: [id])
 
-  attributes     CategoryAttribute[]
-  questions      CategoryQuestion[]
-  businesses     Business[]
+  attributes CategoryAttribute[]
+  questions  CategoryQuestion[]
+  businesses Business[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -279,44 +350,48 @@ model CategoryQuestion {
 // ---------------------------------------------------------------------------
 
 model Business {
-  id          String         @id @default(uuid())
-  name        String
-  slug        String         @unique
-  categoryId  String
-  category    BusinessCategory @relation(fields: [categoryId], references: [id])
-  subcategory String?
-  description String?
-  logoUrl     String?
+  id            String           @id @default(uuid())
+  name          String
+  slug          String           @unique
+  categoryId    String
+  category      BusinessCategory @relation(fields: [categoryId], references: [id])
+  subcategory   String?
+  description   String?
+  logoUrl       String?
   coverImageUrl String?
 
-  phone       String?
-  email       String?
-  website     String?
-  whatsapp    String?
-  address     String?
-  city        String?
-  state       String?
-  country     String?
+  phone    String?
+  email    String?
+  website  String?
+  whatsapp String?
+  address  String?
+  city     String?
+  state    String?
+  country  String?
 
   instagramUrl String?
   facebookUrl  String?
   linkedinUrl  String?
   youtubeUrl   String?
 
-  usp             String?
-  targetAudience  String?
-  brandTone       String?
+  usp            String?
+  targetAudience String?
+  brandTone      String?
 
   primaryColor   String @default("#0F172A")
   secondaryColor String @default("#F8FAFC")
   buttonColor    String @default("#2563EB")
 
-  defaultLanguage   String   @default("en")
-  allowedLanguages  Json     @default("[\"en\"]")
-  aiTone            ReviewTone   @default(NATURAL)
-  aiLength          ReviewLength @default(MEDIUM)
+  defaultLanguage  String       @default("en")
+  allowedLanguages Json         @default("[\"en\"]")
+  aiTone           ReviewTone   @default(NATURAL)
+  aiLength         ReviewLength @default(MEDIUM)
 
   status BusinessStatus @default(ACTIVE)
+
+  // Per-business overrides on top of category.defaultFeatures — same shape,
+  // any key present here wins. Read only via getEffectiveFeatures().
+  featureOverrides Json?
 
   createdById String
   createdBy   User   @relation("BusinessCreator", fields: [createdById], references: [id])
@@ -332,6 +407,13 @@ model Business {
   googleReviewConfig GoogleReviewConfiguration?
   customerSessions   CustomerSession[]
   notifications      Notification[]
+
+  productCategories ProductCategory[]
+  products          Product[]
+  tables            RestaurantTable[]
+  tableSessions     TableSession[]
+  orders            Order[]
+  posIntegration    POSIntegration?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -353,14 +435,14 @@ model BusinessService {
 }
 
 model GoogleReviewConfiguration {
-  id             String   @id @default(uuid())
-  businessId     String   @unique
-  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id              String    @id @default(uuid())
+  businessId      String    @unique
+  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   googleReviewUrl String
-  googlePlaceId  String?
-  verifiedAt     DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  googlePlaceId   String?
+  verifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 // ---------------------------------------------------------------------------
@@ -370,21 +452,21 @@ model GoogleReviewConfiguration {
 // A ReviewCampaign is the single addressable unit behind a printed QR code,
 // an NFC tap, or a digital link — they all resolve to the same /r/[slug] URL.
 model ReviewCampaign {
-  id          String         @id @default(uuid())
-  businessId  String
-  business    Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  name        String
-  code        String         @unique // e.g. SPOT-RVW-8H3K92
-  slug        String         @unique // public URL segment: /r/[slug]
-  placement   String?        // e.g. "Reception", "Table 3", "Billing Counter"
-  description String?
-  ctaText     String         @default("Scan to Share Your Experience")
+  id                      String         @id @default(uuid())
+  businessId              String
+  business                Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name                    String
+  code                    String         @unique // e.g. SPOT-RVW-8H3K92
+  slug                    String         @unique // public URL segment: /r/[slug]
+  placement               String? // e.g. "Reception", "Table 3", "Billing Counter"
+  description             String?
+  ctaText                 String         @default("Scan to Share Your Experience")
   googleReviewUrlOverride String?
-  status      CampaignStatus @default(ACTIVE)
+  status                  CampaignStatus @default(ACTIVE)
 
-  qrCode      QRCode?
-  nfcDevices  NFCDevice[]
-  sessions    CustomerSession[]
+  qrCode          QRCode?
+  nfcDevices      NFCDevice[]
+  sessions        CustomerSession[]
   analyticsEvents AnalyticsEvent[]
 
   createdAt DateTime @default(now())
@@ -394,22 +476,22 @@ model ReviewCampaign {
 }
 
 model QRCode {
-  id           String         @id @default(uuid())
-  campaignId   String         @unique
-  campaign     ReviewCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  style        String         @default("standard") // standard | branded | logo
-  foregroundColor String      @default("#0F172A")
-  backgroundColor String      @default("#FFFFFF")
-  includeLogo  Boolean        @default(false)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id              String         @id @default(uuid())
+  campaignId      String         @unique
+  campaign        ReviewCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  style           String         @default("standard") // standard | branded | logo
+  foregroundColor String         @default("#0F172A")
+  backgroundColor String         @default("#FFFFFF")
+  includeLogo     Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model NFCDevice {
   id         String         @id @default(uuid())
   campaignId String
   campaign   ReviewCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  label      String         // e.g. "NFC Standee - Entrance"
+  label      String // e.g. "NFC Standee - Entrance"
   uid        String         @unique // physical tag identifier
   isActive   Boolean        @default(true)
   createdAt  DateTime       @default(now())
@@ -422,71 +504,71 @@ model NFCDevice {
 // ---------------------------------------------------------------------------
 
 model CustomerSession {
-  id           String   @id @default(uuid())
-  businessId   String
-  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  campaignId   String
-  campaign     ReviewCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  language     String?
-  deviceType   String?
+  id            String         @id @default(uuid())
+  businessId    String
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaignId    String
+  campaign      ReviewCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  language      String?
+  deviceType    String?
   userAgentHash String?
-  currentStep  String   @default("landing")
-  startedAt    DateTime @default(now())
-  completedAt  DateTime?
+  currentStep   String         @default("landing")
+  startedAt     DateTime       @default(now())
+  completedAt   DateTime?
 
-  feedback     CustomerFeedback?
+  feedback        CustomerFeedback?
   privateFeedback PrivateFeedback?
-  drafts       AIReviewDraft[]
+  drafts          AIReviewDraft[]
   analyticsEvents AnalyticsEvent[]
-  aiUsage      AIUsage[]
+  aiUsage         AIUsage[]
 
   @@index([businessId])
   @@index([campaignId])
 }
 
 model CustomerFeedback {
-  id                 String   @id @default(uuid())
-  sessionId          String   @unique
+  id                 String          @id @default(uuid())
+  sessionId          String          @unique
   session            CustomerSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   businessId         String
-  business           Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business           Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
   rating             Int
-  selectedAttributes Json     @default("[]")
+  selectedAttributes Json            @default("[]")
   writtenFeedback    String?
-  language           String   @default("en")
-  createdAt          DateTime @default(now())
+  language           String          @default("en")
+  createdAt          DateTime        @default(now())
 
   @@index([businessId])
   @@index([rating])
 }
 
 model AIReviewDraft {
-  id          String       @id @default(uuid())
-  sessionId   String
-  session     CustomerSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  variant     DraftVariant
-  content     String
-  tone        ReviewTone
-  length      ReviewLength
-  provider    AIProviderName
-  model       String
-  isFinal     Boolean      @default(false)
-  isCopied    Boolean      @default(false)
-  createdAt   DateTime     @default(now())
+  id        String          @id @default(uuid())
+  sessionId String
+  session   CustomerSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  variant   DraftVariant
+  content   String
+  tone      ReviewTone
+  length    ReviewLength
+  provider  AIProviderName
+  model     String
+  isFinal   Boolean         @default(false)
+  isCopied  Boolean         @default(false)
+  createdAt DateTime        @default(now())
 
   @@index([sessionId])
 }
 
 model PrivateFeedback {
-  id         String   @id @default(uuid())
-  sessionId  String   @unique
-  session    CustomerSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  message    String
+  id          String                @id @default(uuid())
+  sessionId   String                @unique
+  session     CustomerSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  businessId  String
+  business    Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  message     String
   contactInfo String?
-  status     PrivateFeedbackStatus @default(NEW)
-  createdAt  DateTime @default(now())
+  status      PrivateFeedbackStatus @default(NEW)
+  createdAt   DateTime              @default(now())
 
   @@index([businessId])
   @@index([status])
@@ -517,20 +599,20 @@ model AnalyticsEvent {
 // ---------------------------------------------------------------------------
 
 model Plan {
-  id                     String   @id @default(uuid())
-  name                   String   @unique
-  slug                   String   @unique
-  monthlyPrice           Int      @default(0) // stored in smallest currency unit
-  yearlyPrice            Int      @default(0)
-  currency               String   @default("INR")
-  businessLimit          Int      @default(1)
-  campaignLimit          Int      @default(3)
-  aiGenerationsPerMonth  Int      @default(100)
-  analyticsRetentionDays Int      @default(30)
-  teamMemberLimit        Int      @default(1)
-  languageLimit          Int      @default(2)
-  advancedInsights       Boolean  @default(false)
-  isActive               Boolean  @default(true)
+  id                     String  @id @default(uuid())
+  name                   String  @unique
+  slug                   String  @unique
+  monthlyPrice           Int     @default(0) // stored in smallest currency unit
+  yearlyPrice            Int     @default(0)
+  currency               String  @default("INR")
+  businessLimit          Int     @default(1)
+  campaignLimit          Int     @default(3)
+  aiGenerationsPerMonth  Int     @default(100)
+  analyticsRetentionDays Int     @default(30)
+  teamMemberLimit        Int     @default(1)
+  languageLimit          Int     @default(2)
+  advancedInsights       Boolean @default(false)
+  isActive               Boolean @default(true)
 
   subscriptions Subscription[]
   payments      Payment[]
@@ -580,18 +662,18 @@ model Payment {
 // ---------------------------------------------------------------------------
 
 model AIUsage {
-  id              String         @id @default(uuid())
-  businessId      String
-  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  sessionId       String?
-  session         CustomerSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  purpose         AIPurpose
-  provider        AIProviderName
-  model           String
-  inputTokens     Int?
-  outputTokens    Int?
-  estimatedCostUsd Float         @default(0)
-  createdAt       DateTime       @default(now())
+  id               String           @id @default(uuid())
+  businessId       String
+  business         Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  sessionId        String?
+  session          CustomerSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  purpose          AIPurpose
+  provider         AIProviderName
+  model            String
+  inputTokens      Int?
+  outputTokens     Int?
+  estimatedCostUsd Float            @default(0)
+  createdAt        DateTime         @default(now())
 
   @@index([businessId, createdAt])
 }
@@ -601,17 +683,17 @@ model AIUsage {
 // ---------------------------------------------------------------------------
 
 model Notification {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   businessId String?
   business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
   type       String
   title      String
   message    String
-  isRead     Boolean  @default(false)
+  isRead     Boolean   @default(false)
   metadata   Json?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   @@index([userId, isRead])
 }
@@ -644,14 +726,14 @@ model Language {
 }
 
 model PlatformSettings {
-  id               String   @id @default(uuid())
-  platformName     String   @default("Spot AI Review")
-  logoUrl          String?
-  primaryColor     String   @default("#2563EB")
-  aiProvider       AIProviderName @default(MOCK)
-  aiModel          String   @default("gpt-4o-mini")
-  defaultSystemPrompt String @default("Write a natural review based ONLY on the customer's stated experience. Do not invent facts. Do not add claims the customer did not provide. Preserve the customer's meaning. Avoid exaggerated marketing language. The review should sound like a real person wrote it.")
-  maxAIGenerationsPerSession Int @default(10)
+  id                         String         @id @default(uuid())
+  platformName               String         @default("Spot AI Review")
+  logoUrl                    String?
+  primaryColor               String         @default("#2563EB")
+  aiProvider                 AIProviderName @default(MOCK)
+  aiModel                    String         @default("gpt-4o-mini")
+  defaultSystemPrompt        String         @default("Write a natural review based ONLY on the customer's stated experience. Do not invent facts. Do not add claims the customer did not provide. Preserve the customer's meaning. Avoid exaggerated marketing language. The review should sound like a real person wrote it.")
+  maxAIGenerationsPerSession Int            @default(10)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -686,4 +768,254 @@ model BlogPost {
   updatedAt DateTime @updatedAt
 
   @@index([status, publishedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Febble Spot — Digital Menu / Products
+// ---------------------------------------------------------------------------
+
+model ProductCategory {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  order      Int      @default(0)
+  isActive   Boolean  @default(true)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model Product {
+  id            String           @id @default(uuid())
+  businessId    String
+  business      Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categoryId    String?
+  category      ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  name          String
+  description   String?
+  imageUrl      String?
+  price         Int // smallest currency unit, same convention as Plan/Payment
+  discountPrice Int?
+  isVeg         Boolean? // null = not applicable to this business type
+  spiceLevel    String?
+  tags          Json             @default("[]")
+  isAvailable   Boolean          @default(true)
+  order         Int              @default(0)
+  posExternalId String? // item ID in the connected POS, once synced
+
+  variants       ProductVariant[]
+  modifierGroups ProductModifierGroup[]
+  orderItems     OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([categoryId])
+}
+
+model ProductVariant {
+  id            String  @id @default(uuid())
+  productId     String
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name          String // e.g. "Half", "Full"
+  priceDelta    Int     @default(0)
+  isDefault     Boolean @default(false)
+  posExternalId String?
+  order         Int     @default(0)
+
+  orderItems OrderItem[]
+
+  @@index([productId])
+}
+
+model ProductModifierGroup {
+  id         String  @id @default(uuid())
+  productId  String
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name       String // e.g. "Add-ons", "Spice Level"
+  minSelect  Int     @default(0)
+  maxSelect  Int     @default(1)
+  isRequired Boolean @default(false)
+  order      Int     @default(0)
+
+  options ProductModifierOption[]
+
+  @@index([productId])
+}
+
+model ProductModifierOption {
+  id            String               @id @default(uuid())
+  groupId       String
+  group         ProductModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name          String
+  priceDelta    Int                  @default(0)
+  posExternalId String?
+  order         Int                  @default(0)
+
+  orderItemModifiers OrderItemModifier[]
+
+  @@index([groupId])
+}
+
+// ---------------------------------------------------------------------------
+// Febble Spot — Tables & Table Sessions
+// ---------------------------------------------------------------------------
+
+model RestaurantTable {
+  id         String      @id @default(uuid())
+  businessId String
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  number     String // display label — "12", "A1" — not necessarily numeric
+  section    String?
+  capacity   Int?
+  status     TableStatus @default(AVAILABLE)
+  qrToken    String      @unique // opaque token behind /order/[qrToken]
+  isActive   Boolean     @default(true)
+
+  sessions TableSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, number])
+  @@index([businessId])
+}
+
+model TableSession {
+  id         String             @id @default(uuid())
+  businessId String
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  tableId    String
+  table      RestaurantTable    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  code       String             @unique // e.g. TS-2026-00124
+  status     TableSessionStatus @default(OPEN)
+  openedAt   DateTime           @default(now())
+  closedAt   DateTime?
+
+  orders Order[]
+
+  @@index([businessId])
+  @@index([tableId])
+}
+
+// ---------------------------------------------------------------------------
+// Febble Spot — Orders (Spot Order)
+// ---------------------------------------------------------------------------
+
+model Order {
+  id                  String             @id @default(uuid())
+  businessId          String
+  business            Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  tableSessionId      String?
+  tableSession        TableSession?      @relation(fields: [tableSessionId], references: [id], onDelete: SetNull)
+  code                String             @unique // e.g. SP1024, shown to the customer
+  type                OrderType
+  status              OrderStatus        @default(RECEIVED)
+  customerName        String?
+  customerPhone       String?
+  deliveryAddress     Json?
+  specialInstructions String?
+  subtotal            Int
+  taxAmount           Int                @default(0)
+  chargesAmount       Int                @default(0)
+  totalAmount         Int
+  currency            String             @default("INR")
+  // Prevents duplicate orders from a double-tap "Place Order" or a retried
+  // request — the create path is a no-op (returns the existing order) on a
+  // second call with the same key. See docs/febble-spot-architecture.md §9.
+  idempotencyKey      String             @unique
+  posOrderId          String?
+  posSyncStatus       OrderPOSSyncStatus @default(NOT_SYNCED)
+  posSyncError        String?
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, status])
+  @@index([tableSessionId])
+}
+
+model OrderItem {
+  id                  String          @id @default(uuid())
+  orderId             String
+  order               Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId           String?
+  product             Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName         String // snapshot at order time — survives menu edits/deletes
+  variantId           String?
+  variant             ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variantName         String?
+  quantity            Int             @default(1)
+  unitPrice           Int
+  lineTotal           Int
+  specialInstructions String?
+
+  modifiers OrderItemModifier[]
+
+  @@index([orderId])
+}
+
+model OrderItemModifier {
+  id               String                 @id @default(uuid())
+  orderItemId      String
+  orderItem        OrderItem              @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  modifierOptionId String?
+  modifierOption   ProductModifierOption? @relation(fields: [modifierOptionId], references: [id], onDelete: SetNull)
+  name             String // snapshot
+  priceDelta       Int                    @default(0)
+
+  @@index([orderItemId])
+}
+
+// ---------------------------------------------------------------------------
+// Febble Spot — POS Connector
+// ---------------------------------------------------------------------------
+
+model POSIntegration {
+  id              String              @id @default(uuid())
+  businessId      String              @unique
+  business        Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  provider        POSProviderName
+  status          POSConnectionStatus @default(DISCONNECTED)
+  lastMenuSyncAt  DateTime?
+  lastOrderSyncAt DateTime?
+  lastError       String?
+
+  credential POSCredential?
+  syncLogs   POSSyncLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Never read outside src/lib/pos/** — every dashboard/action surface gets
+// POSIntegration's status/timestamps only, never this row.
+model POSCredential {
+  id               String         @id @default(uuid())
+  posIntegrationId String         @unique
+  posIntegration   POSIntegration @relation(fields: [posIntegrationId], references: [id], onDelete: Cascade)
+  encryptedPayload String // AES-256-GCM ciphertext; see src/lib/pos/crypto.ts
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model POSSyncLog {
+  id               String         @id @default(uuid())
+  posIntegrationId String
+  posIntegration   POSIntegration @relation(fields: [posIntegrationId], references: [id], onDelete: Cascade)
+  type             POSSyncType
+  result           POSSyncResult
+  message          String?
+  createdAt        DateTime       @default(now())
+
+  @@index([posIntegrationId, createdAt])
 }
