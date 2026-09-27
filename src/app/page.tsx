@@ -281,28 +281,30 @@ export default function Home() {
               If customers walk in, call, or check out — AiReview turns that moment into a review.
             </motion.p>
           </Reveal>
-          <Reveal className="mt-10 flex flex-wrap justify-center gap-3">
-            {CATEGORIES.map((c) => (
-              <motion.span
-                key={c.label}
-                variants={revealItem}
-                whileHover={{ y: -3, scale: 1.03 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                className="flex cursor-default items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-ink-600 shadow-card transition-colors hover:border-brand-200 hover:text-brand-700 dark:hover:border-brand-800 dark:hover:text-brand-400"
-              >
-                <c.icon size={15} className="text-brand-600" />
-                {c.label}
-              </motion.span>
+        </div>
+
+        <div
+          className="relative mt-10 overflow-hidden"
+          style={{
+            maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+            WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+          }}
+        >
+          <div className="flex w-max animate-marquee gap-3 py-1 hover:[animation-play-state:paused] motion-reduce:animate-none">
+            {[0, 1].map((dup) => (
+              <div key={dup} className="flex shrink-0 gap-3" aria-hidden={dup === 1}>
+                {CATEGORIES.map((c) => (
+                  <span
+                    key={c.label}
+                    className="flex shrink-0 cursor-default items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-ink-600 shadow-card transition-all hover:-translate-y-0.5 hover:border-brand-200 hover:text-brand-700 dark:hover:border-brand-800 dark:hover:text-brand-400"
+                  >
+                    <c.icon size={15} className="text-brand-600" />
+                    {c.label}
+                  </span>
+                ))}
+              </div>
             ))}
-            <motion.span
-              variants={revealItem}
-              whileHover={{ y: -3, scale: 1.03 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
-              className="flex cursor-default items-center rounded-full border border-dashed border-border px-4 py-2 text-sm font-medium text-ink-400"
-            >
-              + more
-            </motion.span>
-          </Reveal>
+          </div>
         </div>
       </section>
 
