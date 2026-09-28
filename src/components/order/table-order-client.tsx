@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { ShoppingCart, UtensilsCrossed, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShoppingCart, UtensilsCrossed, Plus, Minus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProductPicker } from "./product-picker";
@@ -15,7 +16,21 @@ function formatRupees(paise: number) {
   return `₹${(paise / 100).toLocaleString("en-IN")}`;
 }
 
-function ProductCard({ product, onSelect }: { product: MenuProduct; onSelect: () => void }) {
+function ProductCard({
+  product,
+  quantity,
+  onAdd,
+  onIncrement,
+  onDecrement,
+}: {
+  product: MenuProduct;
+  quantity: number;
+  onAdd: () => void;
+  onIncrement: () => void;
+  onDecrement: () => void;
+}) {
+  const steppable = product.variants.length === 0 && product.modifierGroups.length === 0;
+
   return (
     <Card className="flex flex-col overflow-hidden p-0">
       <div className="relative aspect-square w-full bg-ink-100 dark:bg-ink-800">
@@ -39,13 +54,47 @@ function ProductCard({ product, onSelect }: { product: MenuProduct; onSelect: ()
           </span>
         )}
 
-        <button
-          onClick={onSelect}
-          aria-label={`Add ${product.name}`}
-          className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white shadow-card transition-transform active:scale-90"
-        >
-          <Plus size={18} />
-        </button>
+        {!steppable && quantity > 0 && (
+          <span className="absolute right-2 top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-xs font-semibold text-white shadow-card">
+            {quantity}
+          </span>
+        )}
+
+        {steppable && quantity > 0 ? (
+          <motion.div
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="absolute bottom-2 right-2 flex items-center gap-0.5 rounded-full bg-brand-600 p-1 text-white shadow-card"
+          >
+            <button onClick={onDecrement} aria-label={`Remove one ${product.name}`} className="flex h-7 w-7 items-center justify-center rounded-full active:bg-white/15">
+              <Minus size={14} />
+            </button>
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={quantity}
+                initial={{ scale: 1.3, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.7, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="w-4 text-center text-sm font-semibold"
+              >
+                {quantity}
+              </motion.span>
+            </AnimatePresence>
+            <button onClick={onIncrement} aria-label={`Add one more ${product.name}`} className="flex h-7 w-7 items-center justify-center rounded-full active:bg-white/15">
+              <Plus size={14} />
+            </button>
+          </motion.div>
+        ) : (
+          <motion.button
+            whileTap={{ scale: 0.85 }}
+            onClick={onAdd}
+            aria-label={`Add ${product.name}`}
+            className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white shadow-card"
+          >
+            <Plus size={18} />
+          </motion.button>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-3">
@@ -67,6 +116,41 @@ function ProductCard({ product, onSelect }: { product: MenuProduct; onSelect: ()
   );
 }
 
+function ProductGrid({
+  products,
+  quantityByProduct,
+  onAdd,
+  onIncrement,
+  onDecrement,
+}: {
+  products: MenuProduct[];
+  quantityByProduct: Map<string, number>;
+  onAdd: (p: MenuProduct) => void;
+  onIncrement: (p: MenuProduct) => void;
+  onDecrement: (p: MenuProduct) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {products.map((p, idx) => (
+        <motion.div
+          key={p.id}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: Math.min(idx * 0.04, 0.3) }}
+        >
+          <ProductCard
+            product={p}
+            quantity={quantityByProduct.get(p.id) ?? 0}
+            onAdd={() => onAdd(p)}
+            onIncrement={() => onIncrement(p)}
+            onDecrement={() => onDecrement(p)}
+          />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 export function TableOrderClient({
   qrToken,
   categories,
@@ -80,26 +164,71 @@ export function TableOrderClient({
   const [cartOpen, setCartOpen] = useState(false);
   const [lines, setLines] = useState<CartLine[]>([]);
   const [refreshSignal, setRefreshSignal] = useState(0);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+
+  const navSections = useMemo(
+    () => [...categories.map((c) => ({ id: c.id, name: c.name })), ...(uncategorized.length > 0 ? [{ id: "uncategorized", name: "More" }] : [])],
+    [categories, uncategorized]
+  );
+
+  useEffect(() => {
+    if (navSections.length <= 1) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActiveSection(visible[0].target.id.replace("section-", ""));
+      },
+      { rootMargin: "-130px 0px -70% 0px", threshold: 0 }
+    );
+    navSections.forEach((s) => {
+      const el = document.getElementById(`section-${s.id}`);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [navSections]);
+
+  function scrollToSection(id: string) {
+    document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const quantityByProduct = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const l of lines) map.set(l.productId, (map.get(l.productId) ?? 0) + l.quantity);
+    return map;
+  }, [lines]);
+
+  function addSimple(product: MenuProduct) {
+    const key = `${product.id}::::`;
+    setLines((prev) => {
+      const existing = prev.find((l) => l.key === key);
+      if (existing) return prev.map((l) => (l.key === key ? { ...l, quantity: l.quantity + 1 } : l));
+      return [
+        ...prev,
+        {
+          key,
+          productId: product.id,
+          productName: product.name,
+          unitPrice: product.discountPrice ?? product.price,
+          quantity: 1,
+          modifiers: [],
+        },
+      ];
+    });
+  }
+
+  function decrementSimple(product: MenuProduct) {
+    const key = `${product.id}::::`;
+    setLines((prev) => {
+      const existing = prev.find((l) => l.key === key);
+      if (!existing) return prev;
+      if (existing.quantity <= 1) return prev.filter((l) => l.key !== key);
+      return prev.map((l) => (l.key === key ? { ...l, quantity: l.quantity - 1 } : l));
+    });
+  }
 
   function onSelectProduct(product: MenuProduct) {
     if (product.variants.length === 0 && product.modifierGroups.length === 0) {
-      // No choices to make — add directly with quantity 1, merging with an identical existing line.
-      const key = `${product.id}::::`;
-      setLines((prev) => {
-        const existing = prev.find((l) => l.key === key);
-        if (existing) return prev.map((l) => (l.key === key ? { ...l, quantity: l.quantity + 1 } : l));
-        return [
-          ...prev,
-          {
-            key,
-            productId: product.id,
-            productName: product.name,
-            unitPrice: product.discountPrice ?? product.price,
-            quantity: 1,
-            modifiers: [],
-          },
-        ];
-      });
+      addSimple(product);
       return;
     }
     setPickerProduct(product);
@@ -127,38 +256,57 @@ export function TableOrderClient({
     <div className="pb-28">
       <SessionPanel qrToken={qrToken} refreshSignal={refreshSignal} />
 
+      {navSections.length > 1 && (
+        <div className="sticky top-0 z-30 -mx-4 mb-5 overflow-x-auto border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur">
+          <div className="flex gap-2">
+            {navSections.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => scrollToSection(s.id)}
+                className={cn(
+                  "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                  activeSection === s.id ? "border-brand-600 bg-brand-600 text-white" : "border-border text-ink-600"
+                )}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-6">
         {categories.map((cat) => (
-          <div key={cat.id}>
+          <div key={cat.id} id={`section-${cat.id}`} className="scroll-mt-28">
             <h2 className="mb-3 font-heading text-lg font-bold text-foreground">{cat.name}</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {cat.products.map((p) => (
-                <ProductCard key={p.id} product={p} onSelect={() => onSelectProduct(p)} />
-              ))}
-            </div>
+            <ProductGrid products={cat.products} quantityByProduct={quantityByProduct} onAdd={onSelectProduct} onIncrement={addSimple} onDecrement={decrementSimple} />
           </div>
         ))}
         {uncategorized.length > 0 && (
-          <div>
+          <div id="section-uncategorized" className="scroll-mt-28">
             {categories.length > 0 && <h2 className="mb-3 font-heading text-lg font-bold text-foreground">More</h2>}
-            <div className="grid grid-cols-2 gap-3">
-              {uncategorized.map((p) => (
-                <ProductCard key={p.id} product={p} onSelect={() => onSelectProduct(p)} />
-              ))}
-            </div>
+            <ProductGrid products={uncategorized} quantityByProduct={quantityByProduct} onAdd={onSelectProduct} onIncrement={addSimple} onDecrement={decrementSimple} />
           </div>
         )}
       </div>
 
-      {itemCount > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 p-4 backdrop-blur">
-          <div className="mx-auto max-w-lg">
-            <Button className="w-full" size="lg" onClick={() => setCartOpen(true)}>
-              <ShoppingCart size={16} /> View Cart · {itemCount} item{itemCount === 1 ? "" : "s"} · {formatRupees(cartTotal(lines))}
-            </Button>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {itemCount > 0 && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 32 }}
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 p-4 backdrop-blur"
+          >
+            <div className="mx-auto max-w-lg">
+              <Button className="w-full" size="lg" onClick={() => setCartOpen(true)}>
+                <ShoppingCart size={16} /> View Cart · {itemCount} item{itemCount === 1 ? "" : "s"} · {formatRupees(cartTotal(lines))}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ProductPicker product={pickerProduct} onClose={() => setPickerProduct(null)} onAdd={addLine} />
       <CartSheet

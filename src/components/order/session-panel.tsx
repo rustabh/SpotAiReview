@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ClipboardList, ChevronDown, ChevronUp, Receipt } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ClipboardList, ChevronDown, Receipt } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,64 +71,78 @@ export function SessionPanel({ qrToken, refreshSignal }: { qrToken: string; refr
 
   if (paidSession) {
     return (
-      <Card className="mb-5 p-5 text-center">
-        <Receipt className="mx-auto mb-2 text-brand-600" size={26} />
-        <p className="font-semibold text-foreground">Bill paid — thank you!</p>
-        <p className="mt-1 text-sm text-ink-400">
-          {formatRupees(paidSession.totalAmount)} · {paidSession.paymentMethod === "ONLINE" ? "Paid online" : "Paid at counter"}
-        </p>
-      </Card>
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+        <Card className="mb-5 p-5 text-center">
+          <Receipt className="mx-auto mb-2 text-brand-600" size={26} />
+          <p className="font-semibold text-foreground">Bill paid — thank you!</p>
+          <p className="mt-1 text-sm text-ink-400">
+            {formatRupees(paidSession.totalAmount)} · {paidSession.paymentMethod === "ONLINE" ? "Paid online" : "Paid at counter"}
+          </p>
+        </Card>
+      </motion.div>
     );
   }
 
   if (!session || session.orders.length === 0) return null;
 
   return (
-    <Card className="mb-5 overflow-hidden p-0">
-      <button onClick={() => setExpanded((v) => !v)} className="flex w-full items-center justify-between gap-3 p-4 text-left">
-        <div className="flex items-center gap-2.5">
-          <ClipboardList size={18} className="text-brand-600" />
-          <div>
-            <p className="text-sm font-semibold text-foreground">Your Orders · {session.orders.length}</p>
-            <p className="text-xs text-ink-400">{formatRupees(session.totalAmount)} so far</p>
+    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+      <Card className="mb-5 overflow-hidden p-0">
+        <button onClick={() => setExpanded((v) => !v)} className="flex w-full items-center justify-between gap-3 p-4 text-left">
+          <div className="flex items-center gap-2.5">
+            <ClipboardList size={18} className="text-brand-600" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Your Orders · {session.orders.length}</p>
+              <p className="text-xs text-ink-400">{formatRupees(session.totalAmount)} so far</p>
+            </div>
           </div>
+          <motion.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown size={16} className="text-ink-400" />
+          </motion.span>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden border-t border-border"
+            >
+              <ul className="space-y-3 px-4 pb-4 pt-3">
+                {session.orders.map((o) => (
+                  <li key={o.id} className="text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-foreground">#{o.code}</span>
+                      <Badge tone={STATUS_TONE[o.status] ?? "neutral"}>{o.status}</Badge>
+                    </div>
+                    <p className="mt-0.5 text-xs text-ink-400">
+                      {o.items.map((i) => `${i.quantity}× ${i.productName}${i.variantName ? ` (${i.variantName})` : ""}`).join(", ")}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="border-t border-border p-4">
+          {session.paymentMethod === "COUNTER" ? (
+            <p className="text-center text-sm text-ink-500">Bill requested — pay at the counter when ready. Staff will confirm.</p>
+          ) : session.billRequestedAt ? (
+            <Button variant="outline" className="w-full" onClick={() => setBillOpen(true)}>
+              View bill &amp; pay
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full" loading={requestingBill} onClick={onRequestBill}>
+              Done eating? Request the bill
+            </Button>
+          )}
         </div>
-        {expanded ? <ChevronUp size={16} className="text-ink-400" /> : <ChevronDown size={16} className="text-ink-400" />}
-      </button>
 
-      {expanded && (
-        <div className="border-t border-border px-4 pb-4 pt-3">
-          <ul className="space-y-3">
-            {session.orders.map((o) => (
-              <li key={o.id} className="text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-foreground">#{o.code}</span>
-                  <Badge tone={STATUS_TONE[o.status] ?? "neutral"}>{o.status}</Badge>
-                </div>
-                <p className="mt-0.5 text-xs text-ink-400">
-                  {o.items.map((i) => `${i.quantity}× ${i.productName}${i.variantName ? ` (${i.variantName})` : ""}`).join(", ")}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="border-t border-border p-4">
-        {session.paymentMethod === "COUNTER" ? (
-          <p className="text-center text-sm text-ink-500">Bill requested — pay at the counter when ready. Staff will confirm.</p>
-        ) : session.billRequestedAt ? (
-          <Button variant="outline" className="w-full" onClick={() => setBillOpen(true)}>
-            View bill &amp; pay
-          </Button>
-        ) : (
-          <Button variant="outline" className="w-full" loading={requestingBill} onClick={onRequestBill}>
-            Done eating? Request the bill
-          </Button>
-        )}
-      </div>
-
-      <BillSheet open={billOpen} onClose={() => setBillOpen(false)} qrToken={qrToken} session={session} onPaid={onPaid} onUpdate={setSession} />
-    </Card>
+        <BillSheet open={billOpen} onClose={() => setBillOpen(false)} qrToken={qrToken} session={session} onPaid={onPaid} onUpdate={setSession} />
+      </Card>
+    </motion.div>
   );
 }
