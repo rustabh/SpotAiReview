@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, UtensilsCrossed } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProductPicker } from "./product-picker";
 import { CartSheet } from "./cart-sheet";
 import { SessionPanel } from "./session-panel";
 import { cartTotal, type CartLine } from "./cart-types";
+import { cn } from "@/lib/utils";
 import type { MenuCategory, MenuProduct } from "@/components/menu/types";
 
 function formatRupees(paise: number) {
@@ -16,40 +17,52 @@ function formatRupees(paise: number) {
 
 function ProductCard({ product, onSelect }: { product: MenuProduct; onSelect: () => void }) {
   return (
-    <Card className="flex items-start gap-3 p-4">
-      {product.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={product.imageUrl}
-          alt={product.name}
-          className="h-16 w-16 shrink-0 rounded-lg object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-ink-100 dark:bg-ink-800">
-          <UtensilsCrossed size={20} className="text-ink-300" />
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          {product.isVeg === true && <span className="h-3 w-3 shrink-0 rounded-sm border-2 border-emerald-600" />}
-          {product.isVeg === false && <span className="h-3 w-3 shrink-0 rounded-sm border-2 border-red-600" />}
-          <p className="text-sm font-semibold text-foreground">{product.name}</p>
-        </div>
-        {product.description && <p className="mt-1 line-clamp-2 text-xs text-ink-400">{product.description}</p>}
-        <div className="mt-2 flex items-center gap-2">
+    <Card className="flex flex-col overflow-hidden p-0">
+      <div className="relative aspect-square w-full bg-ink-100 dark:bg-ink-800">
+        {product.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" loading="lazy" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <UtensilsCrossed size={26} className="text-ink-300" />
+          </div>
+        )}
+
+        {product.isVeg != null && (
+          <span
+            className={cn(
+              "absolute left-2 top-2 flex h-4 w-4 items-center justify-center rounded-sm border-2 bg-white/90",
+              product.isVeg ? "border-emerald-600" : "border-red-600"
+            )}
+          >
+            <span className={cn("h-1.5 w-1.5 rounded-full", product.isVeg ? "bg-emerald-600" : "bg-red-600")} />
+          </span>
+        )}
+
+        <button
+          onClick={onSelect}
+          aria-label={`Add ${product.name}`}
+          className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white shadow-card transition-transform active:scale-90"
+        >
+          <Plus size={18} />
+        </button>
+      </div>
+
+      <div className="flex flex-1 flex-col p-3">
+        <p className="line-clamp-1 text-sm font-semibold text-foreground">{product.name}</p>
+        {product.description && <p className="mt-0.5 line-clamp-1 text-xs text-ink-400">{product.description}</p>}
+        <div className="mt-auto flex items-center gap-1.5 pt-2">
           {product.discountPrice != null ? (
             <>
-              <span className="text-sm font-medium text-foreground">{formatRupees(product.discountPrice)}</span>
+              <span className="text-sm font-semibold text-foreground">{formatRupees(product.discountPrice)}</span>
               <span className="text-xs text-ink-400 line-through">{formatRupees(product.price)}</span>
             </>
           ) : (
-            <span className="text-sm font-medium text-foreground">{formatRupees(product.price)}</span>
+            <span className="text-sm font-semibold text-foreground">{formatRupees(product.price)}</span>
           )}
           {product.variants.length > 0 && <span className="text-xs text-ink-400">from</span>}
         </div>
       </div>
-      <Button size="sm" variant="outline" onClick={onSelect} className="shrink-0">Add</Button>
     </Card>
   );
 }
@@ -118,7 +131,7 @@ export function TableOrderClient({
         {categories.map((cat) => (
           <div key={cat.id}>
             <h2 className="mb-3 font-heading text-lg font-bold text-foreground">{cat.name}</h2>
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               {cat.products.map((p) => (
                 <ProductCard key={p.id} product={p} onSelect={() => onSelectProduct(p)} />
               ))}
@@ -128,7 +141,7 @@ export function TableOrderClient({
         {uncategorized.length > 0 && (
           <div>
             {categories.length > 0 && <h2 className="mb-3 font-heading text-lg font-bold text-foreground">More</h2>}
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               {uncategorized.map((p) => (
                 <ProductCard key={p.id} product={p} onSelect={() => onSelectProduct(p)} />
               ))}
