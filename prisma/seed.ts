@@ -9,6 +9,8 @@ const CATEGORIES: {
   attributes: string[];
   questions: string[];
   aiContext: string;
+  // Febble Spot module defaults for this category — see src/lib/features.ts.
+  defaultFeatures: Record<string, boolean>;
 }[] = [
   {
     name: "Restaurant",
@@ -16,6 +18,7 @@ const CATEGORIES: {
     attributes: ["Food", "Taste", "Service", "Ambience", "Cleanliness", "Value"],
     questions: ["What did you order?", "How was the wait time?"],
     aiContext: "Focus on food quality, taste, service speed and ambience. Avoid inventing specific dish names not mentioned by the customer.",
+    defaultFeatures: { menu: true, ordering: true, tables: true },
   },
   {
     name: "Salon & Spa",
@@ -23,6 +26,7 @@ const CATEGORIES: {
     attributes: ["Staff", "Service Quality", "Cleanliness", "Result", "Professionalism", "Experience"],
     questions: ["Which service did you get?", "How was the result?"],
     aiContext: "Focus on staff skill, service outcome and salon cleanliness. Never invent a specific stylist name.",
+    defaultFeatures: { services: true, appointments: true },
   },
   {
     name: "Clinic & Healthcare",
@@ -30,6 +34,7 @@ const CATEGORIES: {
     attributes: ["Doctor", "Staff", "Waiting Time", "Cleanliness", "Communication", "Overall Experience"],
     questions: ["What was your visit for?", "How was your interaction with the doctor?"],
     aiContext: "Focus on care quality, communication and cleanliness. Never invent a diagnosis, treatment or medical outcome.",
+    defaultFeatures: { services: true, appointments: true },
   },
   {
     name: "Hotel",
@@ -37,6 +42,7 @@ const CATEGORIES: {
     attributes: ["Room", "Cleanliness", "Staff", "Location", "Service", "Breakfast", "Value"],
     questions: ["How was your room?", "Would you recommend this stay?"],
     aiContext: "Focus on room quality, staff hospitality and location. Never invent room numbers or specific staff names.",
+    defaultFeatures: { menu: true, ordering: true, services: true },
   },
   {
     name: "Retail Store",
@@ -44,6 +50,7 @@ const CATEGORIES: {
     attributes: ["Product Quality", "Staff", "Price", "Variety", "Shopping Experience"],
     questions: ["What did you purchase?", "How was the staff assistance?"],
     aiContext: "Focus on product quality, pricing and shopping experience. Never invent specific product names not mentioned.",
+    defaultFeatures: { products: true },
   },
   {
     name: "Digital Marketing Agency",
@@ -51,6 +58,7 @@ const CATEGORIES: {
     attributes: ["Communication", "Creativity", "Delivery", "Support", "Results", "Professionalism"],
     questions: ["What service did the agency provide?", "How were the results?"],
     aiContext: "Focus on communication quality, creativity and delivery timelines. Never invent specific campaign metrics.",
+    defaultFeatures: { services: true },
   },
   {
     name: "Real Estate Agency",
@@ -58,6 +66,7 @@ const CATEGORIES: {
     attributes: ["Communication", "Property", "Documentation", "Support", "Professionalism"],
     questions: ["What kind of property were you looking for?", "How was the support during the process?"],
     aiContext: "Focus on communication, professionalism and support during the property process. Never invent property prices or addresses.",
+    defaultFeatures: { services: true },
   },
   {
     name: "Automobile Service Center",
@@ -65,6 +74,7 @@ const CATEGORIES: {
     attributes: ["Service Quality", "Staff", "Turnaround Time", "Pricing", "Cleanliness"],
     questions: ["What service did your vehicle need?", "How long did it take?"],
     aiContext: "Focus on service quality, turnaround time and pricing transparency. Never invent specific vehicle issues not mentioned.",
+    defaultFeatures: { services: true, appointments: true },
   },
   {
     name: "Gym & Fitness Studio",
@@ -72,6 +82,7 @@ const CATEGORIES: {
     attributes: ["Trainers", "Equipment", "Cleanliness", "Ambience", "Value", "Results"],
     questions: ["What programs did you use?", "How were the trainers?"],
     aiContext: "Focus on trainer quality, equipment and ambience. Never invent specific fitness results or numbers.",
+    defaultFeatures: { services: true, appointments: true },
   },
   {
     name: "Coaching Institute",
@@ -79,6 +90,7 @@ const CATEGORIES: {
     attributes: ["Teaching Quality", "Staff", "Study Material", "Infrastructure", "Results", "Support"],
     questions: ["Which course did you take?", "How was the teaching quality?"],
     aiContext: "Focus on teaching quality, study material and support. Never invent exam scores or specific outcomes.",
+    defaultFeatures: { services: true, appointments: true },
   },
 ];
 
@@ -140,13 +152,14 @@ async function main() {
     const slug = slugify(cat.name);
     const created = await prisma.businessCategory.upsert({
       where: { slug },
-      update: {},
+      update: { defaultFeatures: cat.defaultFeatures },
       create: {
         name: cat.name,
         slug,
         description: cat.description,
         aiContext: cat.aiContext,
         isCustom: false,
+        defaultFeatures: cat.defaultFeatures,
         attributes: { create: cat.attributes.map((label, order) => ({ label, order })) },
         questions: { create: cat.questions.map((text, order) => ({ text, order })) },
       },

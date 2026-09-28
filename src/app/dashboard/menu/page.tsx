@@ -2,10 +2,11 @@ import Link from "next/link";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { logoutAction } from "@/actions/session";
-import { Building2, Sparkles, Users, CreditCard, Settings, LogOut, ChevronRight } from "lucide-react";
+import { Building2, Sparkles, Users, CreditCard, Settings, LogOut, ChevronRight, UtensilsCrossed } from "lucide-react";
 
 const ITEMS = [
   { href: "/dashboard/businesses", label: "My Businesses", icon: Building2 },
+  { href: "/dashboard/catalogue", label: "Spot Menu", icon: UtensilsCrossed },
   { href: "/dashboard/ai-insights", label: "AI Insights", icon: Sparkles },
   { href: "/dashboard/team", label: "Team", icon: Users },
   { href: "/dashboard/subscription", label: "Subscription", icon: CreditCard },
