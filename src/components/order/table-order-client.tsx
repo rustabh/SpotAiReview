@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, UtensilsCrossed, Plus, Minus } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed, Plus, Minus, Search, Leaf, Flame, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProductPicker } from "./product-picker";
@@ -57,6 +57,12 @@ function ProductCard({
         {!steppable && quantity > 0 && (
           <span className="absolute right-2 top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-xs font-semibold text-white shadow-card">
             {quantity}
+          </span>
+        )}
+
+        {product.isPopular && (
+          <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-card">
+            <Flame size={10} /> Popular
           </span>
         )}
 
@@ -165,10 +171,34 @@ export function TableOrderClient({
   const [lines, setLines] = useState<CartLine[]>([]);
   const [refreshSignal, setRefreshSignal] = useState(0);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [vegOnly, setVegOnly] = useState(false);
+
+  function matchesFilters(p: MenuProduct) {
+    if (vegOnly && p.isVeg !== true) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      if (!p.name.toLowerCase().includes(q) && !p.description?.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  }
+
+  const filteredCategories = useMemo(
+    () => categories.map((c) => ({ ...c, products: c.products.filter(matchesFilters) })).filter((c) => c.products.length > 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [categories, search, vegOnly]
+  );
+  const filteredUncategorized = useMemo(
+    () => uncategorized.filter(matchesFilters),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [uncategorized, search, vegOnly]
+  );
+  const hasFilters = search.trim().length > 0 || vegOnly;
+  const noResults = hasFilters && filteredCategories.length === 0 && filteredUncategorized.length === 0;
 
   const navSections = useMemo(
-    () => [...categories.map((c) => ({ id: c.id, name: c.name })), ...(uncategorized.length > 0 ? [{ id: "uncategorized", name: "More" }] : [])],
-    [categories, uncategorized]
+    () => [...filteredCategories.map((c) => ({ id: c.id, name: c.name })), ...(filteredUncategorized.length > 0 ? [{ id: "uncategorized", name: "More" }] : [])],
+    [filteredCategories, filteredUncategorized]
   );
 
   useEffect(() => {
@@ -256,39 +286,71 @@ export function TableOrderClient({
     <div className="pb-28">
       <SessionPanel qrToken={qrToken} refreshSignal={refreshSignal} />
 
-      {navSections.length > 1 && (
-        <div className="sticky top-0 z-30 -mx-4 mb-5 overflow-x-auto border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur">
-          <div className="flex gap-2">
-            {navSections.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => scrollToSection(s.id)}
-                className={cn(
-                  "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
-                  activeSection === s.id ? "border-brand-600 bg-brand-600 text-white" : "border-border text-ink-600"
-                )}
-              >
-                {s.name}
+      <div className="sticky top-0 z-30 -mx-4 mb-5 space-y-2.5 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search the menu"
+              className="h-9 w-full rounded-full border border-border bg-surface pl-9 pr-8 text-sm text-foreground placeholder:text-ink-400 focus:border-brand-400 focus:outline-none"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600">
+                <X size={14} />
               </button>
-            ))}
+            )}
           </div>
+          <button
+            onClick={() => setVegOnly((v) => !v)}
+            className={cn(
+              "flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
+              vegOnly ? "border-emerald-600 bg-emerald-600 text-white" : "border-border text-ink-600"
+            )}
+          >
+            <Leaf size={14} /> Veg
+          </button>
         </div>
-      )}
 
-      <div className="space-y-6">
-        {categories.map((cat) => (
-          <div key={cat.id} id={`section-${cat.id}`} className="scroll-mt-28">
-            <h2 className="mb-3 font-heading text-lg font-bold text-foreground">{cat.name}</h2>
-            <ProductGrid products={cat.products} quantityByProduct={quantityByProduct} onAdd={onSelectProduct} onIncrement={addSimple} onDecrement={decrementSimple} />
-          </div>
-        ))}
-        {uncategorized.length > 0 && (
-          <div id="section-uncategorized" className="scroll-mt-28">
-            {categories.length > 0 && <h2 className="mb-3 font-heading text-lg font-bold text-foreground">More</h2>}
-            <ProductGrid products={uncategorized} quantityByProduct={quantityByProduct} onAdd={onSelectProduct} onIncrement={addSimple} onDecrement={decrementSimple} />
+        {navSections.length > 1 && (
+          <div className="-mx-4 overflow-x-auto px-4">
+            <div className="flex gap-2">
+              {navSections.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => scrollToSection(s.id)}
+                  className={cn(
+                    "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                    activeSection === s.id ? "border-brand-600 bg-brand-600 text-white" : "border-border text-ink-600"
+                  )}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
+
+      {noResults ? (
+        <p className="py-16 text-center text-sm text-ink-400">No items match your search{vegOnly ? " and veg filter" : ""}. Try something else.</p>
+      ) : (
+        <div className="space-y-6">
+          {filteredCategories.map((cat) => (
+            <div key={cat.id} id={`section-${cat.id}`} className="scroll-mt-32">
+              <h2 className="mb-3 font-heading text-lg font-bold text-foreground">{cat.name}</h2>
+              <ProductGrid products={cat.products} quantityByProduct={quantityByProduct} onAdd={onSelectProduct} onIncrement={addSimple} onDecrement={decrementSimple} />
+            </div>
+          ))}
+          {filteredUncategorized.length > 0 && (
+            <div id="section-uncategorized" className="scroll-mt-32">
+              {filteredCategories.length > 0 && <h2 className="mb-3 font-heading text-lg font-bold text-foreground">More</h2>}
+              <ProductGrid products={filteredUncategorized} quantityByProduct={quantityByProduct} onAdd={onSelectProduct} onIncrement={addSimple} onDecrement={decrementSimple} />
+            </div>
+          )}
+        </div>
+      )}
 
       <AnimatePresence>
         {itemCount > 0 && (

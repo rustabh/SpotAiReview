@@ -21,5 +21,6 @@ export type MenuProduct = {
   categoryId: string | null;
   variants: MenuVariant[];
   modifierGroups: MenuModifierGroup[];
+  isPopular?: boolean; // set only on the public customer menu, from aggregated bill ratings
 };
 export type MenuCategory = { id: string; name: string; isActive: boolean; products: MenuProduct[] };

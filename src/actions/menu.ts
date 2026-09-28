@@ -65,7 +65,45 @@ export async function getPublicMenu(businessId: string) {
     },
   });
 
-  return { categories: categories.filter((c) => c.products.length > 0), uncategorized };
+  const filteredCategories = categories.filter((c) => c.products.length > 0);
+  const allProducts = [...filteredCategories.flatMap((c) => c.products), ...uncategorized];
+  const popularIds = await getPopularProductIds(allProducts.map((p) => p.id));
+
+  for (const p of allProducts) {
+    (p as { isPopular?: boolean }).isPopular = popularIds.has(p.id);
+  }
+
+  return { categories: filteredCategories, uncategorized };
+}
+
+/**
+ * Products the majority of raters tagged "Most Recommended" at the bill (min
+ * 2 ratings, so one stray tap doesn't badge an item) — shown as a small
+ * "Popular" signal on the customer menu.
+ */
+async function getPopularProductIds(productIds: string[]): Promise<Set<string>> {
+  if (productIds.length === 0) return new Set();
+
+  const groups = await prisma.orderItem.groupBy({
+    by: ["productId", "rating"],
+    where: { productId: { in: productIds }, rating: { not: null } },
+    _count: true,
+  });
+
+  const totals = new Map<string, { most: number; total: number }>();
+  for (const g of groups) {
+    if (!g.productId) continue;
+    const entry = totals.get(g.productId) ?? { most: 0, total: 0 };
+    entry.total += g._count;
+    if (g.rating === "MOST_RECOMMENDED") entry.most += g._count;
+    totals.set(g.productId, entry);
+  }
+
+  const popular = new Set<string>();
+  for (const [productId, { most, total }] of totals) {
+    if (total >= 2 && most / total >= 0.5) popular.add(productId);
+  }
+  return popular;
 }
 
 /** One-click enable for businesses whose category defaults don't already include it. */
