@@ -2,6 +2,8 @@ import type {
   AIBlogArticleResult,
   AIGroundingContext,
   AIGenerationResult,
+  AIGmbAuditSummaryInput,
+  AIGmbAuditSummaryResult,
   AIInsightsInput,
   AIInsightsResult,
   AIProvider,
@@ -10,7 +12,15 @@ import type {
   AITransformInput,
   AITransformResult,
 } from "../types";
-import { SYSTEM_PROMPT, buildBlogArticlePrompt, buildGenerateDraftsPrompt, buildInsightsPrompt, buildReviewReplyPrompt, buildTransformPrompt } from "../prompts";
+import {
+  SYSTEM_PROMPT,
+  buildBlogArticlePrompt,
+  buildGenerateDraftsPrompt,
+  buildGmbAuditSummaryPrompt,
+  buildInsightsPrompt,
+  buildReviewReplyPrompt,
+  buildTransformPrompt,
+} from "../prompts";
 
 const API_URL = "https://api.anthropic.com/v1/messages";
 
@@ -94,6 +104,11 @@ export class AnthropicProvider implements AIProvider {
 
   async generateReviewReply(input: AIReviewReplyInput): Promise<AIReviewReplyResult> {
     const { content, inputTokens, outputTokens } = await this.messages(buildReviewReplyPrompt(input));
+    return { content: content.trim(), provider: this.name, model: this.model, inputTokens, outputTokens };
+  }
+
+  async generateGmbAuditSummary(input: AIGmbAuditSummaryInput): Promise<AIGmbAuditSummaryResult> {
+    const { content, inputTokens, outputTokens } = await this.messages(buildGmbAuditSummaryPrompt(input));
     return { content: content.trim(), provider: this.name, model: this.model, inputTokens, outputTokens };
   }
 }

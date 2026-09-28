@@ -88,6 +88,28 @@ export interface AIReviewReplyResult {
   outputTokens?: number;
 }
 
+export interface AIGmbAuditCheckInput {
+  label: string;
+  status: "pass" | "warn" | "fail";
+  detail: string;
+  recommendation: string | null;
+}
+
+export interface AIGmbAuditSummaryInput {
+  businessName: string;
+  categoryName: string;
+  score: number;
+  checks: AIGmbAuditCheckInput[];
+}
+
+export interface AIGmbAuditSummaryResult {
+  content: string;
+  provider: string;
+  model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+}
+
 export interface AIBlogArticleResult {
   title: string;
   metaTitle: string;
@@ -107,6 +129,7 @@ export interface AIProvider {
   generateInsights(input: AIInsightsInput): Promise<AIInsightsResult>;
   generateBlogArticle(topic: string): Promise<AIBlogArticleResult>;
   generateReviewReply(input: AIReviewReplyInput): Promise<AIReviewReplyResult>;
+  generateGmbAuditSummary(input: AIGmbAuditSummaryInput): Promise<AIGmbAuditSummaryResult>;
 }
 
 /** Minimum signal required before we let AI write anything at all. */

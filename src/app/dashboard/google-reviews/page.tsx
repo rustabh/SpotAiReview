@@ -1,21 +1,26 @@
+import Link from "next/link";
 import { listMyBusinesses } from "@/actions/business";
 import { getGoogleReviewsPageData } from "@/actions/google-reviews";
+import { getGmbAuditView } from "@/actions/gmb-audit";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { BusinessSwitcher } from "@/components/dashboard/business-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Building2, Reply } from "lucide-react";
 import { GoogleReviewsPanel } from "@/components/dashboard/google-reviews-panel";
+import { GmbAuditPanel } from "@/components/dashboard/gmb-audit-panel";
 
 export default async function GoogleReviewsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ businessId?: string; error?: string; connected?: string }>;
+  searchParams: Promise<{ businessId?: string; error?: string; connected?: string; tab?: string }>;
 }) {
   const [businesses, params] = await Promise.all([listMyBusinesses(), searchParams]);
   const businessId = params.businessId || businesses[0]?.id;
+  const tab = params.tab === "audit" ? "audit" : "reviews";
 
   if (!businessId) {
     return (
@@ -27,17 +32,39 @@ export default async function GoogleReviewsPage({
   }
 
   const data = await getGoogleReviewsPageData(businessId);
+  const isConnected = data.configured && data.connection?.status === "CONNECTED";
+  const audit = isConnected ? await getGmbAuditView(businessId) : null;
 
   return (
     <div>
       <PageHeader
-        title="Google Reviews"
-        description="AI drafts a reply to every new Google review — you approve it (or turn on auto-post) before it goes live."
+        title="Google Business"
+        description="AI-drafted review replies and a ranking audit for your Google Business Profile."
         action={businesses.length > 1 ? <BusinessSwitcher businesses={businesses} value={businessId} basePath="/dashboard/google-reviews" /> : undefined}
       />
 
       {params.error && <Alert tone="error" className="mb-4">{decodeURIComponent(params.error)}</Alert>}
       {params.connected && <Alert tone="success" className="mb-4">Connected! Syncing your reviews now.</Alert>}
+
+      {isConnected && (
+        <div className="mb-5 flex gap-2 border-b border-border">
+          {[
+            { id: "reviews", label: "Reviews" },
+            { id: "audit", label: "Ranking Audit" },
+          ].map((t) => (
+            <Link
+              key={t.id}
+              href={`/dashboard/google-reviews?businessId=${businessId}&tab=${t.id}`}
+              className={cn(
+                "border-b-2 px-3 pb-2.5 text-sm font-medium transition-colors",
+                tab === t.id ? "border-brand-600 text-foreground" : "border-transparent text-ink-400 hover:text-ink-600"
+              )}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {!data.configured ? (
         <Card>
@@ -83,6 +110,8 @@ export default async function GoogleReviewsPage({
             </a>
           </CardContent>
         </Card>
+      ) : tab === "audit" ? (
+        <GmbAuditPanel businessId={businessId} initialAudit={audit} />
       ) : (
         <GoogleReviewsPanel businessId={businessId} connection={data.connection} reviews={data.reviews} />
       )}

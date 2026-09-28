@@ -2,6 +2,8 @@ import type {
   AIBlogArticleResult,
   AIGroundingContext,
   AIGenerationResult,
+  AIGmbAuditSummaryInput,
+  AIGmbAuditSummaryResult,
   AIInsightsInput,
   AIInsightsResult,
   AIProvider,
@@ -193,5 +195,17 @@ export class MockAIProvider implements AIProvider {
       content = `We're really sorry to hear this, ${firstName}. This isn't the experience we want anyone to have at ${input.businessName}, and we'd appreciate the chance to make it right — please reach out to us directly.`;
     }
     return { content, provider: this.name, model: this.model, inputTokens: 0, outputTokens: 0 };
+  }
+
+  async generateGmbAuditSummary(input: AIGmbAuditSummaryInput): Promise<AIGmbAuditSummaryResult> {
+    const priority = input.checks.filter((c) => c.status !== "pass" && c.recommendation).slice(0, 3);
+    const tier = input.score >= 80 ? "in good shape" : input.score >= 55 ? "solid but has clear gaps" : "leaving easy ranking wins on the table";
+    const lines = [`${input.businessName}'s Google profile is ${tier} — you're scoring ${input.score}/100.`];
+    if (priority.length > 0) {
+      lines.push(`Start with: ${priority.map((c) => c.recommendation).join(" ")}`);
+    } else {
+      lines.push("Everything on this checklist looks solid — keep it up and revisit this audit periodically.");
+    }
+    return { content: lines.join(" "), provider: this.name, model: this.model, inputTokens: 0, outputTokens: 0 };
   }
 }

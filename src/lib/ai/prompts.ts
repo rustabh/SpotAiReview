@@ -1,4 +1,4 @@
-import type { AIGroundingContext, AIReviewReplyInput, TransformInstruction } from "./types";
+import type { AIGmbAuditSummaryInput, AIGroundingContext, AIReviewReplyInput, TransformInstruction } from "./types";
 
 export const SYSTEM_PROMPT = `You are the AiReview writing assistant.
 
@@ -121,4 +121,24 @@ Rules:
 - One warm closing line is enough; skip a generic "— Team ${input.businessName}" signature block.
 - Write in ${input.language ?? "English"}.
 - Output the reply text only — no quotes, no markdown, no preamble.`;
+}
+
+export function buildGmbAuditSummaryPrompt(input: AIGmbAuditSummaryInput) {
+  const checklistLines = input.checks
+    .map((c) => `- [${c.status.toUpperCase()}] ${c.label}: ${c.detail}${c.recommendation ? ` → ${c.recommendation}` : ""}`)
+    .join("\n");
+
+  return `You are a local-SEO advisor summarizing a Google Business Profile audit for ${input.businessName} (a ${input.categoryName}).
+
+Overall score: ${input.score}/100
+
+Checklist results:
+${checklistLines}
+
+Write a short, encouraging, practical summary (3-5 sentences) for the business owner:
+- Open with one honest sentence on where they stand overall (do not just restate the number).
+- Name the 2-3 highest-impact items to fix first, in priority order — pick from the FAIL and WARN items above, never invent a new recommendation not listed.
+- Do not repeat every checklist item — this is a prioritized summary, not a restatement.
+- Plain, direct language a busy shop owner would appreciate — no marketing fluff, no jargon.
+- Output plain text only, no markdown, no preamble.`;
 }

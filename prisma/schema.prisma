@@ -1081,6 +1081,13 @@ model GoogleBusinessConnection {
   lastSyncAt DateTime?
   lastError  String?
 
+  // Cached result of the last ranking audit (src/actions/gmb-audit.ts) — recomputed on demand
+  // rather than kept in a history table, since only "where do we stand right now" matters here.
+  lastAuditAt        DateTime?
+  lastAuditScore     Int? // 0-100
+  lastAuditChecklist Json? // GmbAuditCheck[] — see src/lib/google/audit.ts
+  lastAuditSummary   String? // AI-written prioritized action plan
+
   connectedById String
   connectedBy   User   @relation(fields: [connectedById], references: [id])
 

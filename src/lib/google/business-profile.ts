@@ -104,6 +104,39 @@ export async function listLocations(accessToken: string, accountName: string): P
   return (data.locations ?? []).map((l: { name: string; title?: string }) => ({ name: l.name, title: l.title ?? l.name }));
 }
 
+export interface GoogleLocationDetails {
+  title: string;
+  phone: string | null;
+  websiteUri: string | null;
+  description: string | null;
+  primaryCategory: string | null;
+  additionalCategoryCount: number;
+  hasCompleteAddress: boolean;
+  hasRegularHours: boolean;
+}
+
+const LOCATION_DETAIL_FIELDS = "name,title,phoneNumbers,categories,storefrontAddress,websiteUri,regularHours,profile";
+
+/** The full profile Google shows searchers — the raw material for the ranking audit checklist. */
+export async function getLocationDetails(accessToken: string, locationName: string): Promise<GoogleLocationDetails> {
+  const params = new URLSearchParams({ readMask: LOCATION_DETAIL_FIELDS });
+  const data = await googleGet(`${BUSINESS_INFO_API}/${locationName}?${params.toString()}`, accessToken);
+
+  const address = data.storefrontAddress;
+  const hasCompleteAddress = Boolean(address?.addressLines?.length && address?.locality && address?.postalCode);
+
+  return {
+    title: data.title ?? "",
+    phone: data.phoneNumbers?.primaryPhone ?? null,
+    websiteUri: data.websiteUri ?? null,
+    description: data.profile?.description ?? null,
+    primaryCategory: data.categories?.primaryCategory?.displayName ?? null,
+    additionalCategoryCount: data.categories?.additionalCategories?.length ?? 0,
+    hasCompleteAddress,
+    hasRegularHours: Boolean(data.regularHours?.periods?.length),
+  };
+}
+
 const STAR_RATING_MAP: Record<string, number> = { ONE: 1, TWO: 2, THREE: 3, FOUR: 4, FIVE: 5 };
 
 export interface GoogleFetchedReview {
