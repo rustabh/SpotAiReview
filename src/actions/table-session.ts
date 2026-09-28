@@ -266,3 +266,61 @@ export async function markSessionPaidCash(sessionId: string, businessId: string)
   revalidatePath("/dashboard/orders");
   return { ok: true, data: undefined };
 }
+
+type RatingCounts = Record<$Enums.RatingSentiment, number>;
+
+function emptyRatingCounts(): RatingCounts {
+  return { MOST_RECOMMENDED: 0, WOULD_RECOMMEND: 0, OKAY: 0, COULD_BE_BETTER: 0 };
+}
+
+export type RatingSummary = {
+  overallCounts: RatingCounts;
+  overallTotal: number;
+  items: { productName: string; counts: RatingCounts; total: number }[];
+};
+
+/** Aggregates every rating collected at the bill — overall visit reactions, plus a per-item breakdown sorted so items with the most "Could Be Better" tags surface first. */
+export async function getRatingSummary(businessId: string): Promise<RatingSummary> {
+  await requireBusinessAccess(businessId);
+
+  const [overallGroups, itemGroups] = await Promise.all([
+    prisma.tableSession.groupBy({
+      by: ["overallRating"],
+      where: { businessId, overallRating: { not: null } },
+      _count: true,
+    }),
+    prisma.orderItem.groupBy({
+      by: ["productName", "rating"],
+      where: { rating: { not: null }, order: { businessId } },
+      _count: true,
+    }),
+  ]);
+
+  const overallCounts = emptyRatingCounts();
+  let overallTotal = 0;
+  for (const g of overallGroups) {
+    if (!g.overallRating) continue;
+    overallCounts[g.overallRating] = g._count;
+    overallTotal += g._count;
+  }
+
+  const itemMap = new Map<string, { counts: RatingCounts; total: number }>();
+  for (const g of itemGroups) {
+    if (!g.rating) continue;
+    const entry = itemMap.get(g.productName) ?? { counts: emptyRatingCounts(), total: 0 };
+    entry.counts[g.rating] = g._count;
+    entry.total += g._count;
+    itemMap.set(g.productName, entry);
+  }
+
+  const items = [...itemMap.entries()]
+    .map(([productName, v]) => ({ productName, ...v }))
+    .sort((a, b) => {
+      const aBad = a.counts.COULD_BE_BETTER / a.total;
+      const bBad = b.counts.COULD_BE_BETTER / b.total;
+      if (aBad !== bBad) return bBad - aBad;
+      return b.total - a.total;
+    });
+
+  return { overallCounts, overallTotal, items };
+}

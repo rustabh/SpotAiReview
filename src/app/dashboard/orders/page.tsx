@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { listMyBusinesses } from "@/actions/business";
 import { listOrders } from "@/actions/orders";
-import { listBillRequests } from "@/actions/table-session";
+import { listBillRequests, getRatingSummary } from "@/actions/table-session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { BusinessSwitcher } from "@/components/dashboard/business-switcher";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OrderQueue } from "@/components/dashboard/order-queue";
 import { BillRequests } from "@/components/dashboard/bill-requests";
+import { RatingSummary } from "@/components/dashboard/rating-summary";
 import { ClipboardList, Building2 } from "lucide-react";
 import type { $Enums } from "@prisma/client";
 
@@ -38,7 +39,11 @@ export default async function OrdersPage({
   }
 
   const statusFilter = params.status as $Enums.OrderStatus | undefined;
-  const [orders, billRequests] = await Promise.all([listOrders(businessId, statusFilter), listBillRequests(businessId)]);
+  const [orders, billRequests, ratingSummary] = await Promise.all([
+    listOrders(businessId, statusFilter),
+    listBillRequests(businessId),
+    getRatingSummary(businessId),
+  ]);
 
   return (
     <div>
@@ -49,6 +54,7 @@ export default async function OrdersPage({
       />
 
       <BillRequests businessId={businessId} requests={billRequests} />
+      <RatingSummary summary={ratingSummary} />
 
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
