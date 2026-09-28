@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, QrCode, MessageSquare, BarChart3, Sparkles, Settings, CreditCard, Users, UtensilsCrossed, LayoutGrid, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Building2, QrCode, MessageSquare, BarChart3, Sparkles, Settings, CreditCard, Users, UtensilsCrossed, LayoutGrid, ClipboardList, Reply } from "lucide-react";
 
 export const SIDEBAR_ITEMS = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -8,6 +8,7 @@ export const SIDEBAR_ITEMS = [
   { href: "/dashboard/orders", label: "Orders", icon: ClipboardList },
   { href: "/dashboard/campaigns", label: "Campaigns & QR", icon: QrCode },
   { href: "/dashboard/feedback", label: "Feedback", icon: MessageSquare },
+  { href: "/dashboard/google-reviews", label: "Google Reviews", icon: Reply },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/ai-insights", label: "AI Insights", icon: Sparkles },
   { href: "/dashboard/team", label: "Team", icon: Users },

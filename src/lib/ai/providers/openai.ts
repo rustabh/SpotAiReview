@@ -5,10 +5,12 @@ import type {
   AIInsightsInput,
   AIInsightsResult,
   AIProvider,
+  AIReviewReplyInput,
+  AIReviewReplyResult,
   AITransformInput,
   AITransformResult,
 } from "../types";
-import { SYSTEM_PROMPT, buildBlogArticlePrompt, buildGenerateDraftsPrompt, buildInsightsPrompt, buildTransformPrompt } from "../prompts";
+import { SYSTEM_PROMPT, buildBlogArticlePrompt, buildGenerateDraftsPrompt, buildInsightsPrompt, buildReviewReplyPrompt, buildTransformPrompt } from "../prompts";
 
 const API_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -87,5 +89,10 @@ export class OpenAIProvider implements AIProvider {
   async generateBlogArticle(topic: string): Promise<AIBlogArticleResult> {
     const { content } = await this.chat(buildBlogArticlePrompt(topic), true);
     return JSON.parse(content) as AIBlogArticleResult;
+  }
+
+  async generateReviewReply(input: AIReviewReplyInput): Promise<AIReviewReplyResult> {
+    const { content, inputTokens, outputTokens } = await this.chat(buildReviewReplyPrompt(input), false);
+    return { content: content.trim(), provider: this.name, model: this.model, inputTokens, outputTokens };
   }
 }

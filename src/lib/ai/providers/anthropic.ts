@@ -5,10 +5,12 @@ import type {
   AIInsightsInput,
   AIInsightsResult,
   AIProvider,
+  AIReviewReplyInput,
+  AIReviewReplyResult,
   AITransformInput,
   AITransformResult,
 } from "../types";
-import { SYSTEM_PROMPT, buildBlogArticlePrompt, buildGenerateDraftsPrompt, buildInsightsPrompt, buildTransformPrompt } from "../prompts";
+import { SYSTEM_PROMPT, buildBlogArticlePrompt, buildGenerateDraftsPrompt, buildInsightsPrompt, buildReviewReplyPrompt, buildTransformPrompt } from "../prompts";
 
 const API_URL = "https://api.anthropic.com/v1/messages";
 
@@ -88,5 +90,10 @@ export class AnthropicProvider implements AIProvider {
   async generateBlogArticle(topic: string): Promise<AIBlogArticleResult> {
     const { content } = await this.messages(buildBlogArticlePrompt(topic), 6000);
     return JSON.parse(extractJson(content)) as AIBlogArticleResult;
+  }
+
+  async generateReviewReply(input: AIReviewReplyInput): Promise<AIReviewReplyResult> {
+    const { content, inputTokens, outputTokens } = await this.messages(buildReviewReplyPrompt(input));
+    return { content: content.trim(), provider: this.name, model: this.model, inputTokens, outputTokens };
   }
 }

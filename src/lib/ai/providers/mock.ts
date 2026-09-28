@@ -5,6 +5,8 @@ import type {
   AIInsightsInput,
   AIInsightsResult,
   AIProvider,
+  AIReviewReplyInput,
+  AIReviewReplyResult,
   AITransformInput,
   AITransformResult,
 } from "../types";
@@ -176,5 +178,20 @@ export class MockAIProvider implements AIProvider {
       readingMinutes: match.readingMinutes,
       content: match.content,
     };
+  }
+
+  async generateReviewReply(input: AIReviewReplyInput): Promise<AIReviewReplyResult> {
+    const firstName = input.reviewerName.trim().split(/\s+/)[0] || "there";
+    let content: string;
+    if (input.starRating >= 4) {
+      content = `Thank you so much, ${firstName}! We're thrilled you had a great experience at ${input.businessName}${
+        input.reviewComment ? " — it really means a lot to hear that." : "."
+      } We hope to see you again soon!`;
+    } else if (input.starRating === 3) {
+      content = `Thanks for the honest feedback, ${firstName}. We're glad parts of your visit to ${input.businessName} went well, and we'd love the chance to do even better next time — please reach out to us directly so we can make it right.`;
+    } else {
+      content = `We're really sorry to hear this, ${firstName}. This isn't the experience we want anyone to have at ${input.businessName}, and we'd appreciate the chance to make it right — please reach out to us directly.`;
+    }
+    return { content, provider: this.name, model: this.model, inputTokens: 0, outputTokens: 0 };
   }
 }

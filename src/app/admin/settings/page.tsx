@@ -1,5 +1,6 @@
 import { getPlatformSettings } from "@/actions/platform";
 import { getRazorpayMode, isRazorpayWebhookConfigured } from "@/lib/payments/razorpay";
+import { isGoogleBusinessConfigured } from "@/lib/google/business-profile";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ export default async function AdminSettingsPage() {
   const settings = await getPlatformSettings();
   const mode = getRazorpayMode();
   const webhookConfigured = isRazorpayWebhookConfigured();
+  const googleConfigured = isGoogleBusinessConfigured();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -55,6 +57,27 @@ export default async function AdminSettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex-col items-start pb-4">
+          <CardTitle>Google Business Profile</CardTitle>
+          <CardDescription>Read-only — set via GOOGLE_BUSINESS_* / GOOGLE_TOKEN_ENCRYPTION_KEY environment variables.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-0">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-ink-500">Review auto-reply</span>
+            <Badge tone={googleConfigured ? "success" : "neutral"}>{googleConfigured ? "Configured" : "Not configured"}</Badge>
+          </div>
+          {!googleConfigured && (
+            <p className="text-xs text-ink-400">
+              Requires a Google Cloud project with the Business Profile API enabled, an OAuth client, and{" "}
+              <strong>Google&apos;s approval of an API access request</strong> — that approval step happens on Google&apos;s side and
+              can&apos;t be skipped. Once approved, set GOOGLE_BUSINESS_CLIENT_ID, GOOGLE_BUSINESS_CLIENT_SECRET, and
+              GOOGLE_TOKEN_ENCRYPTION_KEY and this lights up for every business automatically.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-6">

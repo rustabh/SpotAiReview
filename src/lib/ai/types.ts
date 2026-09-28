@@ -70,6 +70,24 @@ export interface AIInsightsResult {
   summary: string;
 }
 
+export interface AIReviewReplyInput {
+  businessName: string;
+  categoryName: string;
+  businessDescription?: string | null;
+  reviewerName: string;
+  starRating: number; // 1-5
+  reviewComment: string | null;
+  language?: string;
+}
+
+export interface AIReviewReplyResult {
+  content: string;
+  provider: string;
+  model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+}
+
 export interface AIBlogArticleResult {
   title: string;
   metaTitle: string;
@@ -88,6 +106,7 @@ export interface AIProvider {
   transformDraft(input: AITransformInput): Promise<AITransformResult>;
   generateInsights(input: AIInsightsInput): Promise<AIInsightsResult>;
   generateBlogArticle(topic: string): Promise<AIBlogArticleResult>;
+  generateReviewReply(input: AIReviewReplyInput): Promise<AIReviewReplyResult>;
 }
 
 /** Minimum signal required before we let AI write anything at all. */

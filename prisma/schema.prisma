@@ -166,6 +166,20 @@ enum POSSyncResult {
   FAILURE
 }
 
+enum GoogleConnectionStatus {
+  CONNECTED
+  PENDING_LOCATION // tokens exchanged, owner still needs to pick which Google location this business is
+  DISCONNECTED
+  AUTH_ERROR // refresh token revoked/expired — needs to reconnect
+}
+
+enum GoogleReplyStatus {
+  NONE // no reply yet
+  DRAFTED // AI wrote a reply, waiting on the owner to approve/edit/post it
+  POSTED // reply is live on Google
+  FAILED // last post attempt to Google failed
+}
+
 enum SubscriptionStatus {
   TRIALING
   ACTIVE
@@ -220,15 +234,16 @@ model User {
   image         String?
   phone         String?
 
-  emailVerificationTokens EmailVerificationToken[]
-  passwordResetTokens     PasswordResetToken[]
-  businessMemberships     BusinessMember[]
-  subscriptions           Subscription[]
-  notifications           Notification[]
-  auditLogs               AuditLog[]               @relation("AuditActor")
-  createdCategories       BusinessCategory[]       @relation("CategoryCreator")
-  createdBusinesses       Business[]               @relation("BusinessCreator")
-  sentTeamInvites         TeamInvite[]
+  emailVerificationTokens   EmailVerificationToken[]
+  passwordResetTokens       PasswordResetToken[]
+  businessMemberships       BusinessMember[]
+  subscriptions             Subscription[]
+  notifications             Notification[]
+  auditLogs                 AuditLog[]                 @relation("AuditActor")
+  createdCategories         BusinessCategory[]         @relation("CategoryCreator")
+  createdBusinesses         Business[]                 @relation("BusinessCreator")
+  sentTeamInvites           TeamInvite[]
+  connectedGoogleBusinesses GoogleBusinessConnection[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -422,12 +437,14 @@ model Business {
   customerSessions   CustomerSession[]
   notifications      Notification[]
 
-  productCategories ProductCategory[]
-  products          Product[]
-  tables            RestaurantTable[]
-  tableSessions     TableSession[]
-  orders            Order[]
-  posIntegration    POSIntegration?
+  productCategories        ProductCategory[]
+  products                 Product[]
+  tables                   RestaurantTable[]
+  tableSessions            TableSession[]
+  orders                   Order[]
+  posIntegration           POSIntegration?
+  googleBusinessConnection GoogleBusinessConnection?
+  googleReviews            GoogleReview[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -970,16 +987,16 @@ model Order {
 }
 
 model OrderItem {
-  id                  String          @id @default(uuid())
+  id                  String           @id @default(uuid())
   orderId             String
-  order               Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order               Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId           String?
-  product             Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  product             Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
   productName         String // snapshot at order time — survives menu edits/deletes
   variantId           String?
-  variant             ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variant             ProductVariant?  @relation(fields: [variantId], references: [id], onDelete: SetNull)
   variantName         String?
-  quantity            Int             @default(1)
+  quantity            Int              @default(1)
   unitPrice           Int
   lineTotal           Int
   specialInstructions String?
@@ -1045,4 +1062,72 @@ model POSSyncLog {
   createdAt        DateTime       @default(now())
 
   @@index([posIntegrationId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Google Business Profile — AI auto-reply to Google reviews
+// ---------------------------------------------------------------------------
+
+model GoogleBusinessConnection {
+  id                 String                 @id @default(uuid())
+  businessId         String                 @unique
+  business           Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  status             GoogleConnectionStatus @default(PENDING_LOCATION)
+  googleAccountName  String? // e.g. "accounts/106..." — set once, never changes after connect
+  googleLocationName String? // e.g. "accounts/106.../locations/456..." — chosen by the owner if there's more than one
+  locationTitle      String? // human-readable name from Google, shown in the dashboard
+  autoReplyEnabled   Boolean                @default(false) // false = AI drafts a reply and the owner approves it before it posts
+
+  lastSyncAt DateTime?
+  lastError  String?
+
+  connectedById String
+  connectedBy   User   @relation(fields: [connectedById], references: [id])
+
+  credential GoogleBusinessCredential?
+  reviews    GoogleReview[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Never read outside src/lib/google/** — every dashboard/action surface gets
+// GoogleBusinessConnection's status/settings only, never this row. Same
+// pattern as POSCredential.
+model GoogleBusinessCredential {
+  id                         String                   @id @default(uuid())
+  googleBusinessConnectionId String                   @unique
+  googleBusinessConnection   GoogleBusinessConnection @relation(fields: [googleBusinessConnectionId], references: [id], onDelete: Cascade)
+  encryptedPayload           String // AES-256-GCM ciphertext of {accessToken, refreshToken, expiresAt}; see src/lib/google/crypto.ts
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GoogleReview {
+  id                         String                   @id @default(uuid())
+  businessId                 String
+  business                   Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  googleBusinessConnectionId String
+  googleBusinessConnection   GoogleBusinessConnection @relation(fields: [googleBusinessConnectionId], references: [id], onDelete: Cascade)
+
+  googleReviewName String   @unique // Google's full review resource name — the stable external id
+  reviewerName     String
+  reviewerPhotoUrl String?
+  starRating       Int // 1-5
+  comment          String?
+  reviewCreatedAt  DateTime
+  reviewUpdatedAt  DateTime
+
+  replyStatus GoogleReplyStatus @default(NONE)
+  draftReply  String? // AI-generated, editable, awaiting owner approval
+  postedReply String? // what actually went live on Google
+  repliedAt   DateTime?
+  replyError  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, replyStatus])
 }
