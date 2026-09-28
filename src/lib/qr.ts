@@ -5,6 +5,11 @@ export function campaignUrl(slug: string) {
   return `${base}/r/${slug}`;
 }
 
+export function tableOrderUrl(qrToken: string) {
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return `${base}/order/${qrToken}`;
+}
+
 export async function generateQrPngDataUrl(url: string, opts?: { fg?: string; bg?: string }) {
   return QRCode.toDataURL(url, {
     margin: 2,

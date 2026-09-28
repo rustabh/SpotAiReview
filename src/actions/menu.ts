@@ -39,6 +39,35 @@ export async function listUncategorizedProducts(businessId: string) {
   });
 }
 
+/** Public — no login. Only available products, for the customer-facing menu/order page. */
+export async function getPublicMenu(businessId: string) {
+  const categories = await prisma.productCategory.findMany({
+    where: { businessId, isActive: true },
+    orderBy: { order: "asc" },
+    include: {
+      products: {
+        where: { isAvailable: true },
+        orderBy: { order: "asc" },
+        include: {
+          variants: { orderBy: { order: "asc" } },
+          modifierGroups: { orderBy: { order: "asc" }, include: { options: { orderBy: { order: "asc" } } } },
+        },
+      },
+    },
+  });
+
+  const uncategorized = await prisma.product.findMany({
+    where: { businessId, categoryId: null, isAvailable: true },
+    orderBy: { order: "asc" },
+    include: {
+      variants: { orderBy: { order: "asc" } },
+      modifierGroups: { orderBy: { order: "asc" }, include: { options: { orderBy: { order: "asc" } } } },
+    },
+  });
+
+  return { categories: categories.filter((c) => c.products.length > 0), uncategorized };
+}
+
 /** One-click enable for businesses whose category defaults don't already include it. */
 export async function enableMenuModule(businessId: string): Promise<ActionResult> {
   const { membership, business } = await requireBusinessAccess(businessId);
