@@ -127,7 +127,7 @@ export function SessionPanel({ qrToken, refreshSignal }: { qrToken: string; refr
         )}
       </div>
 
-      <BillSheet open={billOpen} onClose={() => setBillOpen(false)} qrToken={qrToken} session={session} onPaid={onPaid} onCounterChosen={setSession} />
+      <BillSheet open={billOpen} onClose={() => setBillOpen(false)} qrToken={qrToken} session={session} onPaid={onPaid} onUpdate={setSession} />
     </Card>
   );
 }

@@ -15,13 +15,21 @@ import type { $Enums } from "@prisma/client";
 // ordering more rounds and then settle up together at the end.
 // ---------------------------------------------------------------------------
 
+export type SessionOrderItemView = {
+  id: string;
+  productName: string;
+  variantName: string | null;
+  quantity: number;
+  rating: $Enums.RatingSentiment | null;
+};
+
 export type SessionOrderView = {
   id: string;
   code: string;
   status: $Enums.OrderStatus;
   totalAmount: number;
   createdAt: Date;
-  items: { id: string; productName: string; variantName: string | null; quantity: number }[];
+  items: SessionOrderItemView[];
 };
 
 export type TableSessionView = {
@@ -31,6 +39,7 @@ export type TableSessionView = {
   billRequestedAt: Date | null;
   paymentMethod: $Enums.TableSessionPaymentMethod | null;
   paidAt: Date | null;
+  overallRating: $Enums.RatingSentiment | null;
   orders: SessionOrderView[];
 };
 
@@ -66,13 +75,14 @@ function toView(session: LoadedSession): TableSessionView {
     billRequestedAt: session.billRequestedAt,
     paymentMethod: session.paymentMethod,
     paidAt: session.paidAt,
+    overallRating: session.overallRating,
     orders: session.orders.map((o) => ({
       id: o.id,
       code: o.code,
       status: o.status,
       totalAmount: o.totalAmount,
       createdAt: o.createdAt,
-      items: o.items.map((i) => ({ id: i.id, productName: i.productName, variantName: i.variantName, quantity: i.quantity })),
+      items: o.items.map((i) => ({ id: i.id, productName: i.productName, variantName: i.variantName, quantity: i.quantity, rating: i.rating })),
     })),
   };
 }
@@ -178,6 +188,34 @@ export async function verifyBillPayment(input: {
   });
 
   revalidatePath("/dashboard/orders");
+  return { ok: true, data: toView(session) };
+}
+
+/** Public — a quick tag reaction to the whole visit, given at the bill. Optional, never blocks payment. */
+export async function rateSessionOverall(qrToken: string, rating: $Enums.RatingSentiment): Promise<ActionResult<TableSessionView>> {
+  const loaded = await loadOpenSession(qrToken);
+  if (!loaded) return { ok: false, error: "No active order found for this table." };
+
+  const session = await prisma.tableSession.update({
+    where: { id: loaded.session.id },
+    data: { overallRating: rating, ratingSubmittedAt: new Date() },
+    include: OPEN_SESSION_INCLUDE,
+  });
+
+  return { ok: true, data: toView(session) };
+}
+
+/** Public — a quick tag reaction to one ordered item, given at the bill. Optional, never blocks payment. */
+export async function rateOrderItem(qrToken: string, orderItemId: string, rating: $Enums.RatingSentiment): Promise<ActionResult<TableSessionView>> {
+  const loaded = await loadOpenSession(qrToken);
+  if (!loaded) return { ok: false, error: "No active order found for this table." };
+
+  const belongsToSession = loaded.session.orders.some((o) => o.items.some((i) => i.id === orderItemId));
+  if (!belongsToSession) return { ok: false, error: "That item isn't part of this table's order." };
+
+  await prisma.orderItem.update({ where: { id: orderItemId }, data: { rating } });
+
+  const session = await prisma.tableSession.findUniqueOrThrow({ where: { id: loaded.session.id }, include: OPEN_SESSION_INCLUDE });
   return { ok: true, data: toView(session) };
 }
 

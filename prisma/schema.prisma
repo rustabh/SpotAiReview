@@ -135,6 +135,15 @@ enum TableSessionPaymentMethod {
   COUNTER
 }
 
+// A quick, tag-based reaction instead of a star rating — collected right at
+// the bill, both for the table's overall visit and for each item ordered.
+enum RatingSentiment {
+  MOST_RECOMMENDED
+  WOULD_RECOMMEND
+  OKAY
+  COULD_BE_BETTER
+}
+
 enum POSProviderName {
   MOCK
   PETPOOJA
@@ -911,6 +920,10 @@ model TableSession {
   razorpayOrderId String?
   paidAt          DateTime?
 
+  // Collected alongside the bill — optional, never blocks payment.
+  overallRating     RatingSentiment?
+  ratingSubmittedAt DateTime?
+
   orders Order[]
 
   @@index([businessId])
@@ -970,6 +983,7 @@ model OrderItem {
   unitPrice           Int
   lineTotal           Int
   specialInstructions String?
+  rating              RatingSentiment? // the customer's quick reaction to this item, given at the bill
 
   modifiers OrderItemModifier[]
 

@@ -4,7 +4,17 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { createBillCheckoutOrder, verifyBillPayment, choosePayAtCounter, type TableSessionView } from "@/actions/table-session";
+import { cn } from "@/lib/utils";
+import { RATING_OPTIONS } from "@/lib/ratings";
+import {
+  createBillCheckoutOrder,
+  verifyBillPayment,
+  choosePayAtCounter,
+  rateSessionOverall,
+  rateOrderItem,
+  type TableSessionView,
+} from "@/actions/table-session";
+import type { $Enums } from "@prisma/client";
 
 declare global {
   interface Window {
@@ -27,23 +37,61 @@ function formatRupees(paise: number) {
   return `₹${(paise / 100).toLocaleString("en-IN")}`;
 }
 
+function RatingChips({
+  selected,
+  onSelect,
+}: {
+  selected: $Enums.RatingSentiment | null;
+  onSelect: (value: $Enums.RatingSentiment) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {RATING_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onSelect(opt.value)}
+          className={cn(
+            "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+            selected === opt.value
+              ? "border-brand-600 bg-brand-600 text-white"
+              : "border-border bg-surface text-ink-500 hover:border-brand-300"
+          )}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function BillSheet({
   open,
   onClose,
   qrToken,
   session,
   onPaid,
-  onCounterChosen,
+  onUpdate,
 }: {
   open: boolean;
   onClose: () => void;
   qrToken: string;
   session: TableSessionView;
   onPaid: (session: TableSessionView) => void;
-  onCounterChosen: (session: TableSessionView) => void;
+  onUpdate: (session: TableSessionView) => void;
 }) {
   const [loading, setLoading] = useState<"online" | "counter" | null>(null);
   const [error, setError] = useState<string | undefined>();
+
+  async function onRateOverall(rating: $Enums.RatingSentiment) {
+    const result = await rateSessionOverall(qrToken, rating);
+    if (result.ok) onUpdate(result.data);
+  }
+
+  async function onRateItem(orderItemId: string, rating: $Enums.RatingSentiment) {
+    const result = await rateOrderItem(qrToken, orderItemId, rating);
+    if (result.ok) onUpdate(result.data);
+  }
 
   async function onPayOnline() {
     setError(undefined);
@@ -99,7 +147,7 @@ export function BillSheet({
       setError(result.error);
       return;
     }
-    onCounterChosen(result.data);
+    onUpdate(result.data);
     onClose();
   }
 
@@ -108,23 +156,38 @@ export function BillSheet({
       <div className="space-y-4">
         {error && <Alert tone="error">{error}</Alert>}
 
-        <ul className="divide-y divide-border">
+        <div className="divide-y divide-border">
           {session.orders.map((o) => (
-            <li key={o.id} className="py-2.5 text-sm">
-              <div className="flex items-center justify-between">
+            <div key={o.id} className="py-3">
+              <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="font-medium text-foreground">#{o.code}</span>
                 <span className="text-ink-500">{formatRupees(o.totalAmount)}</span>
               </div>
-              <p className="mt-0.5 text-xs text-ink-400">
-                {o.items.map((i) => `${i.quantity}× ${i.productName}${i.variantName ? ` (${i.variantName})` : ""}`).join(", ")}
-              </p>
-            </li>
+              <ul className="space-y-2.5">
+                {o.items.map((item) => (
+                  <li key={item.id}>
+                    <p className="text-sm text-ink-600">
+                      {item.quantity}× {item.productName}
+                      {item.variantName ? ` (${item.variantName})` : ""}
+                    </p>
+                    <div className="mt-1">
+                      <RatingChips selected={item.rating} onSelect={(rating) => onRateItem(item.id, rating)} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
 
         <div className="flex items-center justify-between border-t border-border pt-3 text-base font-semibold text-foreground">
           <span>Total</span>
           <span>{formatRupees(session.totalAmount)}</span>
+        </div>
+
+        <div className="border-t border-border pt-3">
+          <p className="mb-2 text-sm font-semibold text-foreground">How was your visit overall?</p>
+          <RatingChips selected={session.overallRating} onSelect={onRateOverall} />
         </div>
 
         {session.paymentMethod === "COUNTER" ? (
