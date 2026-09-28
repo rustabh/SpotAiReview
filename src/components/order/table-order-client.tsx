@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, UtensilsCrossed } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProductPicker } from "./product-picker";
 import { CartSheet } from "./cart-sheet";
+import { SessionPanel } from "./session-panel";
 import { cartTotal, type CartLine } from "./cart-types";
 import type { MenuCategory, MenuProduct } from "@/components/menu/types";
 
@@ -16,6 +17,19 @@ function formatRupees(paise: number) {
 function ProductCard({ product, onSelect }: { product: MenuProduct; onSelect: () => void }) {
   return (
     <Card className="flex items-start gap-3 p-4">
+      {product.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={product.imageUrl}
+          alt={product.name}
+          className="h-16 w-16 shrink-0 rounded-lg object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-ink-100 dark:bg-ink-800">
+          <UtensilsCrossed size={20} className="text-ink-300" />
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           {product.isVeg === true && <span className="h-3 w-3 shrink-0 rounded-sm border-2 border-emerald-600" />}
@@ -52,6 +66,7 @@ export function TableOrderClient({
   const [pickerProduct, setPickerProduct] = useState<MenuProduct | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
   function onSelectProduct(product: MenuProduct) {
     if (product.variants.length === 0 && product.modifierGroups.length === 0) {
@@ -97,6 +112,8 @@ export function TableOrderClient({
 
   return (
     <div className="pb-28">
+      <SessionPanel qrToken={qrToken} refreshSignal={refreshSignal} />
+
       <div className="space-y-6">
         {categories.map((cat) => (
           <div key={cat.id}>
@@ -138,7 +155,10 @@ export function TableOrderClient({
         lines={lines}
         onUpdateQuantity={updateQuantity}
         onRemove={removeLine}
-        onPlaced={() => setLines([])}
+        onPlaced={() => {
+          setLines([]);
+          setRefreshSignal((n) => n + 1);
+        }}
       />
     </div>
   );

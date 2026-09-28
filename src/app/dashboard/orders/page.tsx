@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { listMyBusinesses } from "@/actions/business";
 import { listOrders } from "@/actions/orders";
+import { listBillRequests } from "@/actions/table-session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { BusinessSwitcher } from "@/components/dashboard/business-switcher";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OrderQueue } from "@/components/dashboard/order-queue";
+import { BillRequests } from "@/components/dashboard/bill-requests";
 import { ClipboardList, Building2 } from "lucide-react";
 import type { $Enums } from "@prisma/client";
 
@@ -36,7 +38,7 @@ export default async function OrdersPage({
   }
 
   const statusFilter = params.status as $Enums.OrderStatus | undefined;
-  const orders = await listOrders(businessId, statusFilter);
+  const [orders, billRequests] = await Promise.all([listOrders(businessId, statusFilter), listBillRequests(businessId)]);
 
   return (
     <div>
@@ -45,6 +47,8 @@ export default async function OrdersPage({
         description="Every order placed from a table QR, in one queue."
         action={businesses.length > 1 ? <BusinessSwitcher businesses={businesses} value={businessId} basePath="/dashboard/orders" /> : undefined}
       />
+
+      <BillRequests businessId={businessId} requests={billRequests} />
 
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTERS.map((f) => (

@@ -130,6 +130,11 @@ enum TableSessionStatus {
   CLOSED
 }
 
+enum TableSessionPaymentMethod {
+  ONLINE
+  COUNTER
+}
+
 enum POSProviderName {
   MOCK
   PETPOOJA
@@ -897,6 +902,14 @@ model TableSession {
   status     TableSessionStatus @default(OPEN)
   openedAt   DateTime           @default(now())
   closedAt   DateTime?
+
+  // The bill/payment lifecycle that closes a session: requested -> a method is chosen ->
+  // paidAt set (immediately for online, once staff confirms for counter) -> session closes,
+  // freeing the table for the next guest's scan to start a brand new session.
+  billRequestedAt DateTime?
+  paymentMethod   TableSessionPaymentMethod?
+  razorpayOrderId String?
+  paidAt          DateTime?
 
   orders Order[]
 

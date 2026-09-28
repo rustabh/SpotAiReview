@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
-import { Trash2 } from "lucide-react";
+import { Trash2, CheckCircle2 } from "lucide-react";
 import { placeOrder } from "@/actions/orders";
 import { cartTotal, type CartLine } from "./cart-types";
 
@@ -41,11 +40,11 @@ export function CartSheet({
   onRemove: (key: string) => void;
   onPlaced: () => void;
 }) {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [placedCode, setPlacedCode] = useState<string | undefined>();
 
   async function onCheckout() {
     setError(undefined);
@@ -70,8 +69,26 @@ export function CartSheet({
       return;
     }
     sessionStorage.removeItem(`checkout-key:${qrToken}`);
+    setName("");
+    setPhone("");
+    setPlacedCode(result.data.code);
     onPlaced();
-    router.push(`/order/${qrToken}/track/${result.data.orderId}`);
+    setTimeout(() => {
+      setPlacedCode(undefined);
+      onClose();
+    }, 1400);
+  }
+
+  if (placedCode) {
+    return (
+      <Modal open={open} onClose={onClose} title="Your order">
+        <div className="py-8 text-center">
+          <CheckCircle2 className="mx-auto mb-2 text-emerald-600" size={32} />
+          <p className="font-semibold text-foreground">Order #{placedCode} placed!</p>
+          <p className="mt-1 text-sm text-ink-400">Feel free to keep browsing and add more to your table.</p>
+        </div>
+      </Modal>
+    );
   }
 
   return (
