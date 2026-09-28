@@ -2,7 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, UtensilsCrossed, Plus, Minus, Search, Leaf, Flame, X } from "lucide-react";
+import {
+  ShoppingCart,
+  UtensilsCrossed,
+  Plus,
+  Minus,
+  Search,
+  Leaf,
+  Flame,
+  X,
+  Soup,
+  Sandwich,
+  CupSoda,
+  Coffee,
+  IceCreamCone,
+  Salad,
+  Pizza,
+  type LucideIcon,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProductPicker } from "./product-picker";
@@ -14,6 +31,36 @@ import type { MenuCategory, MenuProduct } from "@/components/menu/types";
 
 function formatRupees(paise: number) {
   return `₹${(paise / 100).toLocaleString("en-IN")}`;
+}
+
+// A warm, appetizing gradient per product (stable per id) for the placeholder shown until a
+// real photo is set — deliberately illustrative rather than a plain gray box or a broken image.
+const GRADIENTS: [string, string][] = [
+  ["#fb923c", "#ef4444"],
+  ["#34d399", "#059669"],
+  ["#60a5fa", "#4f46e5"],
+  ["#f472b6", "#db2777"],
+  ["#fbbf24", "#d97706"],
+  ["#a78bfa", "#7c3aed"],
+];
+
+function gradientFor(id: string): [string, string] {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return GRADIENTS[hash % GRADIENTS.length];
+}
+
+function iconFor(name: string): LucideIcon {
+  const n = name.toLowerCase();
+  if (/chicken|mutton|kebab|tikka|seekh|grill|tandoori|fish/.test(n)) return Flame;
+  if (/biryani|pulao|dal|curry|gravy|makhani|masala|rice/.test(n)) return Soup;
+  if (/naan|roti|bread|paratha|kulcha/.test(n)) return Sandwich;
+  if (/cola|soda|juice|lassi|shake|mojito|water/.test(n)) return CupSoda;
+  if (/coffee|tea|chai/.test(n)) return Coffee;
+  if (/ice cream|kulfi|gulab|dessert|sweet|cake/.test(n)) return IceCreamCone;
+  if (/salad/.test(n)) return Salad;
+  if (/pizza/.test(n)) return Pizza;
+  return UtensilsCrossed;
 }
 
 function ProductCard({
@@ -30,16 +77,18 @@ function ProductCard({
   onDecrement: () => void;
 }) {
   const steppable = product.variants.length === 0 && product.modifierGroups.length === 0;
+  const Icon = iconFor(product.name);
+  const [from, to] = gradientFor(product.id);
 
   return (
     <Card className="flex flex-col overflow-hidden p-0">
-      <div className="relative aspect-square w-full bg-ink-100 dark:bg-ink-800">
+      <div className="relative aspect-square w-full">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" loading="lazy" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <UtensilsCrossed size={26} className="text-ink-300" />
+          <div className="flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}>
+            <Icon size={38} strokeWidth={1.5} className="text-white/85" />
           </div>
         )}
 
@@ -103,19 +152,19 @@ function ProductCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-3">
+      <div className="flex flex-1 flex-col p-3.5">
         <p className="line-clamp-1 text-sm font-semibold text-foreground">{product.name}</p>
         {product.description && <p className="mt-0.5 line-clamp-1 text-xs text-ink-400">{product.description}</p>}
-        <div className="mt-auto flex items-center gap-1.5 pt-2">
+        <div className="mt-auto flex items-baseline gap-1.5 pt-2.5">
           {product.discountPrice != null ? (
             <>
-              <span className="text-sm font-semibold text-foreground">{formatRupees(product.discountPrice)}</span>
+              <span className="text-base font-bold text-foreground">{formatRupees(product.discountPrice)}</span>
               <span className="text-xs text-ink-400 line-through">{formatRupees(product.price)}</span>
             </>
           ) : (
-            <span className="text-sm font-semibold text-foreground">{formatRupees(product.price)}</span>
+            <span className="text-base font-bold text-foreground">{formatRupees(product.price)}</span>
           )}
-          {product.variants.length > 0 && <span className="text-xs text-ink-400">from</span>}
+          {product.variants.length > 0 && <span className="text-xs text-ink-400">onwards</span>}
         </div>
       </div>
     </Card>
@@ -339,13 +388,23 @@ export function TableOrderClient({
         <div className="space-y-6">
           {filteredCategories.map((cat) => (
             <div key={cat.id} id={`section-${cat.id}`} className="scroll-mt-32">
-              <h2 className="mb-3 font-heading text-lg font-bold text-foreground">{cat.name}</h2>
+              <div className="mb-3 flex items-baseline gap-2">
+                <span className="h-4 w-1 rounded-full bg-brand-600" />
+                <h2 className="font-heading text-lg font-bold text-foreground">{cat.name}</h2>
+                <span className="text-xs font-medium text-ink-400">{cat.products.length}</span>
+              </div>
               <ProductGrid products={cat.products} quantityByProduct={quantityByProduct} onAdd={onSelectProduct} onIncrement={addSimple} onDecrement={decrementSimple} />
             </div>
           ))}
           {filteredUncategorized.length > 0 && (
             <div id="section-uncategorized" className="scroll-mt-32">
-              {filteredCategories.length > 0 && <h2 className="mb-3 font-heading text-lg font-bold text-foreground">More</h2>}
+              {filteredCategories.length > 0 && (
+                <div className="mb-3 flex items-baseline gap-2">
+                  <span className="h-4 w-1 rounded-full bg-brand-600" />
+                  <h2 className="font-heading text-lg font-bold text-foreground">More</h2>
+                  <span className="text-xs font-medium text-ink-400">{filteredUncategorized.length}</span>
+                </div>
+              )}
               <ProductGrid products={filteredUncategorized} quantityByProduct={quantityByProduct} onAdd={onSelectProduct} onIncrement={addSimple} onDecrement={decrementSimple} />
             </div>
           )}
