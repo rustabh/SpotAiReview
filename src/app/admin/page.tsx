@@ -4,8 +4,12 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, QrCode, Sparkles, ExternalLink, CreditCard } from "lucide-react";
+import { Building2, Users, QrCode, Sparkles, ExternalLink, CreditCard, IndianRupee } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+
+function formatRupees(paise: number) {
+  return `₹${(paise / 100).toLocaleString("en-IN")}`;
+}
 
 export default async function AdminOverviewPage() {
   const overview = await getAdminOverview();
@@ -15,6 +19,8 @@ export default async function AdminOverviewPage() {
       <PageHeader title="Platform Dashboard" description="Everything happening across AiReview." />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <StatCard label="Total Revenue" value={formatRupees(overview.revenueTotal)} icon={IndianRupee} />
+        <StatCard label="Revenue This Month" value={formatRupees(overview.revenueThisMonth)} icon={IndianRupee} />
         <StatCard label="Total Businesses" value={overview.totalBusinesses} icon={Building2} />
         <StatCard label="Active Businesses" value={overview.activeBusinesses} icon={Building2} />
         <StatCard label="Business Owners" value={overview.totalOwners} icon={Users} />

@@ -54,7 +54,7 @@ export function passwordResetEmail(resetUrl: string) {
   return `
     <p style="margin:0 0 16px;">We received a request to reset your AiReview password.</p>
     <p style="margin:0 0 24px;">Click the button below to choose a new password. This link expires in 30 minutes.</p>
-    <a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Reset Password</a>
+    <a href="${resetUrl}" style="display:inline-block;background:#27272a;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Reset Password</a>
     <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;">If you didn't request this, you can safely ignore this email — your password won't change.</p>
   `;
 }
@@ -63,7 +63,7 @@ export function welcomeEmail(name: string) {
   return `
     <p style="margin:0 0 16px;">Hi ${name},</p>
     <p style="margin:0 0 16px;">Welcome to AiReview! Your account is ready — set up your first business and QR campaign in under five minutes.</p>
-    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard/businesses/new" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Set Up Your Business</a>
+    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard/businesses/new" style="display:inline-block;background:#27272a;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Set Up Your Business</a>
   `;
 }
 
@@ -73,7 +73,7 @@ export function businessOwnerCreatedEmail(name: string, email: string, temporary
     <p style="margin:0 0 16px;">An AiReview account has been created for you. Here are your login details:</p>
     <p style="margin:0 0 8px;"><strong>Email:</strong> ${email}</p>
     <p style="margin:0 0 24px;"><strong>Temporary password:</strong> ${temporaryPassword}</p>
-    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/login" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Log In</a>
+    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/login" style="display:inline-block;background:#27272a;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Log In</a>
     <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;">We recommend changing this password after your first login.</p>
   `;
 }
@@ -81,7 +81,7 @@ export function businessOwnerCreatedEmail(name: string, email: string, temporary
 export function teamInviteEmail(businessName: string, role: string) {
   return `
     <p style="margin:0 0 16px;">You've been added to <strong>${businessName}</strong>'s team on AiReview as a <strong>${role.toLowerCase()}</strong>.</p>
-    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Open Dashboard</a>
+    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard" style="display:inline-block;background:#27272a;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Open Dashboard</a>
   `;
 }
 
@@ -91,7 +91,7 @@ export function paymentConfirmationEmail(amountPaise: number, currency: string, 
     <p style="margin:0 0 16px;">Thanks for your payment! Here's your receipt:</p>
     <p style="margin:0 0 8px;"><strong>Plan:</strong> ${planName}</p>
     <p style="margin:0 0 24px;"><strong>Amount:</strong> ${currency} ${amount}</p>
-    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard/subscription" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">View Subscription</a>
+    <a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard/subscription" style="display:inline-block;background:#27272a;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">View Subscription</a>
   `;
 }
 
@@ -99,7 +99,7 @@ export function teamInviteNewUserEmail(businessName: string, role: string, accep
   return `
     <p style="margin:0 0 16px;">You've been invited to join <strong>${businessName}</strong> on AiReview as a <strong>${role.toLowerCase()}</strong>.</p>
     <p style="margin:0 0 24px;">Create your account to accept the invite — it only takes a minute.</p>
-    <a href="${acceptUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Accept Invite</a>
+    <a href="${acceptUrl}" style="display:inline-block;background:#27272a;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">Accept Invite</a>
     <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;">This invite expires in 7 days.</p>
   `;
 }

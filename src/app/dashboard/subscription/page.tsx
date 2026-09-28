@@ -1,18 +1,37 @@
-import { getMySubscription } from "@/actions/subscription";
+import { getMySubscription, getMyPayments } from "@/actions/subscription";
 import { listAllPlans } from "@/actions/admin";
 import { isRazorpayConfigured } from "@/lib/payments/razorpay";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Receipt } from "lucide-react";
 import { PlanSwitchButton } from "@/components/dashboard/plan-switch-button";
+import { formatDate } from "@/lib/utils";
+import type { $Enums } from "@prisma/client";
 
 function formatPrice(paise: number) {
   return paise === 0 ? "Free" : `₹${(paise / 100).toLocaleString("en-IN")}/mo`;
 }
 
+function formatRupees(paise: number) {
+  return `₹${(paise / 100).toLocaleString("en-IN")}`;
+}
+
+const PAYMENT_STATUS_TONE: Record<$Enums.PaymentStatus, "neutral" | "success" | "warning" | "danger"> = {
+  PENDING: "warning",
+  SUCCEEDED: "success",
+  FAILED: "danger",
+  REFUNDED: "neutral",
+};
+
 export default async function SubscriptionPage() {
-  const [{ subscription, businessCount, campaignCount }, plans] = await Promise.all([getMySubscription(), listAllPlans()]);
+  const [{ subscription, businessCount, campaignCount }, plans, payments] = await Promise.all([
+    getMySubscription(),
+    listAllPlans(),
+    getMyPayments(),
+  ]);
   const configured = isRazorpayConfigured();
 
   return (
@@ -60,6 +79,30 @@ export default async function SubscriptionPage() {
           </Card>
         ))}
       </div>
+
+      <Card className="mt-6">
+        <CardHeader><CardTitle>Billing History</CardTitle></CardHeader>
+        <CardContent>
+          {payments.length === 0 ? (
+            <EmptyState icon={Receipt} title="No payments yet" description="Charges from paid plan checkouts will show up here, with a receipt sent to your email." />
+          ) : (
+            <ul className="divide-y divide-border">
+              {payments.map((p) => (
+                <li key={p.id} className="flex items-center justify-between py-3 text-sm">
+                  <div>
+                    <p className="font-medium text-foreground">{p.plan?.name ?? "Plan"}</p>
+                    <p className="text-xs text-ink-400">{formatDate(p.createdAt)}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-foreground">{formatRupees(p.amount)}</span>
+                    <Badge tone={PAYMENT_STATUS_TONE[p.status]}>{p.status}</Badge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

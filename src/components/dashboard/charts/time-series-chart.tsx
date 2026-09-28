@@ -3,7 +3,7 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const SERIES = {
-  scans: { label: "Scans", color: "#2563eb" },
+  scans: { label: "Scans", color: "#27272a" },
   feedback: { label: "Feedback", color: "#d97706" },
 } as const;
 

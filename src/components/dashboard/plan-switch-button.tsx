@@ -57,7 +57,7 @@ export function PlanSwitchButton({ planId, isCurrent, planName }: { planId: stri
         currency,
         name: "AiReview",
         description: `${planName} plan`,
-        theme: { color: "#2563eb" },
+        theme: { color: "#27272a" },
         handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
           const verified = await verifyCheckoutPayment({
             paymentId,

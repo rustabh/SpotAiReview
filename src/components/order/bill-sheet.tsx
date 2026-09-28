@@ -118,7 +118,7 @@ export function BillSheet({
       currency,
       name: session.code,
       description: "Table bill",
-      theme: { color: "#2563eb" },
+      theme: { color: "#27272a" },
       modal: { ondismiss: () => setLoading(null) },
       handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
         const verified = await verifyBillPayment({

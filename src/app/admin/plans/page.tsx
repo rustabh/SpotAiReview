@@ -8,7 +8,7 @@ export default async function AdminPlansPage() {
 
   return (
     <div>
-      <PageHeader title="Subscription Plans" description="Configure pricing and usage limits. Payment provider integration (Razorpay/Stripe) can be wired up against this data model." />
+      <PageHeader title="Subscription Plans" description="Configure pricing and usage limits. Paid plans checkout through Razorpay automatically once it's configured — see Settings." />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {plans.map((p) => (
           <Card key={p.id}>

@@ -81,7 +81,7 @@ function ProductCard({
   const [from, to] = gradientFor(product.id);
 
   return (
-    <Card className="flex flex-col overflow-hidden p-0">
+    <Card className="flex h-full flex-col overflow-hidden p-0">
       <div className="relative aspect-square w-full">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -189,6 +189,7 @@ function ProductGrid({
       {products.map((p, idx) => (
         <motion.div
           key={p.id}
+          className="h-full"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: Math.min(idx * 0.04, 0.3) }}

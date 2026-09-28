@@ -106,16 +106,31 @@ export async function updateCategoryStatus(categoryId: string, isActive: boolean
 export async function getAdminOverview() {
   await requireSuperAdmin();
 
-  const [totalBusinesses, activeBusinesses, totalOwners, totalScans, totalAIGenerations, totalGoogleClicks, activeSubscriptions] =
-    await Promise.all([
-      prisma.business.count(),
-      prisma.business.count({ where: { status: "ACTIVE" } }),
-      prisma.user.count({ where: { role: "BUSINESS_OWNER" } }),
-      prisma.analyticsEvent.count({ where: { type: "SCAN" } }),
-      prisma.aIUsage.count(),
-      prisma.analyticsEvent.count({ where: { type: "GOOGLE_CLICK" } }),
-      prisma.subscription.count({ where: { status: { in: ["ACTIVE", "TRIALING"] } } }),
-    ]);
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const [
+    totalBusinesses,
+    activeBusinesses,
+    totalOwners,
+    totalScans,
+    totalAIGenerations,
+    totalGoogleClicks,
+    activeSubscriptions,
+    revenueTotal,
+    revenueThisMonth,
+  ] = await Promise.all([
+    prisma.business.count(),
+    prisma.business.count({ where: { status: "ACTIVE" } }),
+    prisma.user.count({ where: { role: "BUSINESS_OWNER" } }),
+    prisma.analyticsEvent.count({ where: { type: "SCAN" } }),
+    prisma.aIUsage.count(),
+    prisma.analyticsEvent.count({ where: { type: "GOOGLE_CLICK" } }),
+    prisma.subscription.count({ where: { status: { in: ["ACTIVE", "TRIALING"] } } }),
+    prisma.payment.aggregate({ where: { status: "SUCCEEDED" }, _sum: { amount: true } }),
+    prisma.payment.aggregate({ where: { status: "SUCCEEDED", createdAt: { gte: startOfMonth } }, _sum: { amount: true } }),
+  ]);
 
   const recentBusinesses = await prisma.business.findMany({
     take: 5,
@@ -143,6 +158,8 @@ export async function getAdminOverview() {
     totalAIGenerations,
     totalGoogleClicks,
     activeSubscriptions,
+    revenueTotal: revenueTotal._sum.amount ?? 0,
+    revenueThisMonth: revenueThisMonth._sum.amount ?? 0,
     recentBusinesses,
     topCampaigns: topCampaigns.map((c) => ({
       count: c._count.campaignId,
@@ -195,6 +212,16 @@ export async function listAllCategories() {
 
 export async function listAllPlans() {
   return prisma.plan.findMany({ orderBy: { monthlyPrice: "asc" } });
+}
+
+/** Every payment attempt platform-wide, most recent first — the admin-side revenue/billing view. */
+export async function listAllPayments(take = 100) {
+  await requireSuperAdmin();
+  return prisma.payment.findMany({
+    take,
+    orderBy: { createdAt: "desc" },
+    include: { plan: true, subscription: { include: { user: true } } },
+  });
 }
 
 export async function updatePlan(planId: string, input: Partial<{

@@ -15,17 +15,18 @@ const config: Config = {
         foreground: "var(--foreground)",
         surface: "var(--surface)",
         border: "var(--border)",
+        // Monochrome, matching the black/white logo mark — not a generic SaaS blue.
         brand: {
-          50: "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#3b82f6",
-          600: "#2563eb",
-          700: "#1d4ed8",
-          800: "#1e40af",
-          900: "#1e3a8a",
+          50: "#f4f4f5",
+          100: "#e4e4e7",
+          200: "#d4d4d8",
+          300: "#a1a1aa",
+          400: "#71717a",
+          500: "#52525b",
+          600: "#3f3f46",
+          700: "#27272a",
+          800: "#18181b",
+          900: "#09090b",
         },
         ink: {
           50: "#f8fafc",
@@ -47,7 +48,7 @@ const config: Config = {
       boxShadow: {
         card: "0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06)",
         soft: "0 2px 8px 0 rgb(15 23 42 / 0.06), 0 8px 24px -8px rgb(15 23 42 / 0.10)",
-        glow: "0 0 0 1px rgb(37 99 235 / 0.08), 0 8px 30px -6px rgb(37 99 235 / 0.25)",
+        glow: "0 0 0 1px rgb(63 63 70 / 0.08), 0 8px 30px -6px rgb(63 63 70 / 0.25)",
       },
       borderRadius: {
         xl: "0.875rem",
