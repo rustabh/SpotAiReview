@@ -26,6 +26,9 @@ import {
   Dumbbell,
   GraduationCap,
   Wrench,
+  Reply,
+  Gauge,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -71,6 +74,33 @@ const FEATURES = [
   { icon: ShieldCheck, title: "Private Feedback, Always Honest", desc: "Low ratings never get hidden — customers can send private feedback straight to the business." },
 ];
 
+const GROWTH_MODULES = [
+  {
+    icon: UtensilsCrossed,
+    tag: "Spot Menu & Ordering",
+    title: "A digital menu your customers can actually order from",
+    desc: "One permanent Smart Link — plus a QR or NFC tag — opens your menu. For restaurants, every table gets its own code so orders and the bill land straight in your dashboard, with online or counter payment.",
+  },
+  {
+    icon: Reply,
+    tag: "Google Review Auto-Reply",
+    title: "Never leave a Google review unanswered again",
+    desc: "The moment a new review comes in, AI drafts a genuine, specific reply grounded in what the customer actually wrote. Approve it with one tap, or switch on auto-post and let it run itself.",
+  },
+  {
+    icon: Gauge,
+    tag: "GMB Ranking Audit",
+    title: "See exactly why you're not showing up in local search",
+    desc: "A 0-100 score across the ten signals Google actually weighs — description, hours, categories, review volume, reply rate — with the top fixes to make, prioritized by AI.",
+  },
+  {
+    icon: Share2,
+    tag: "Social Auto-Posting",
+    title: "Turn today's menu into today's Instagram post",
+    desc: "AI picks a real product photo, writes a caption and hashtags, and posts it to Facebook and Instagram — or leaves it as a draft for you to approve first.",
+  },
+];
+
 const FAQS = [
   {
     q: "Does the AI ever write fake reviews?",
@@ -95,6 +125,14 @@ const FAQS = [
   {
     q: "What happens to feedback from unhappy customers?",
     a: "Customers who give a lower rating are routed to a private feedback form that comes straight to you — never a public review page. This means you can resolve real issues directly instead of them turning into a public 1-star review, while still hearing every piece of honest feedback.",
+  },
+  {
+    q: "Can customers actually order food or book through AiReview, not just leave reviews?",
+    a: "Yes — turn on Spot Menu and every business gets a permanent Smart Link (plus a QR or NFC tag) that shows a real, browsable menu or catalogue. Restaurants can go further with per-table QR ordering, live order tracking, and online or counter payment, all inside the same dashboard.",
+  },
+  {
+    q: "Does AiReview reply to my Google reviews and post to social media for me?",
+    a: "Once you connect your Google Business Profile and Facebook Page, yes. AI drafts a reply to every new Google review and a ready-to-publish Facebook/Instagram post from your real menu photos — you approve each one, or switch on auto-post to let it run on its own. A ranking audit also scores your Google profile and tells you exactly what to fix to show up higher in local search.",
   },
 ];
 
@@ -349,6 +387,31 @@ export default function Home() {
             ))}
           </Reveal>
         </div>
+      </section>
+
+      {/* Growth modules beyond reviews */}
+      <section className="mx-auto max-w-6xl px-6 py-24">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <motion.p variants={revealItem} className="text-xs font-semibold uppercase tracking-wider text-brand-600">Beyond reviews</motion.p>
+          <motion.h2 variants={revealItem} className="mt-2 font-heading text-3xl font-bold tracking-tight text-foreground">One login, a full growth toolkit</motion.h2>
+          <motion.p variants={revealItem} className="mt-3 text-ink-500">Turn features on as you need them — every business starts with reviews, and grows into the rest.</motion.p>
+        </Reveal>
+        <Reveal className="mt-14 grid gap-5 sm:grid-cols-2">
+          {GROWTH_MODULES.map((m) => (
+            <motion.div key={m.title} variants={revealItem} whileHover={{ y: -4 }}>
+              <Card className="h-full p-6 transition-shadow hover:shadow-soft">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/30">
+                    <m.icon size={19} />
+                  </div>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-brand-600">{m.tag}</span>
+                </div>
+                <h3 className="mt-4 font-heading font-semibold text-foreground">{m.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink-500">{m.desc}</p>
+              </Card>
+            </motion.div>
+          ))}
+        </Reveal>
       </section>
 
       {/* Pricing */}

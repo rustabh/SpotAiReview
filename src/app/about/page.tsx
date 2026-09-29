@@ -128,6 +128,12 @@ export default function AboutPage() {
                 for any kind of business, in the customer&apos;s own language — while giving owners full visibility
                 into every scan, draft, and click along the way.
               </p>
+              <p className="mt-3 leading-relaxed text-ink-600">
+                It has since grown into a full local-growth toolkit under the same login: a digital Spot Menu with
+                table ordering for restaurants, AI-drafted replies to every Google review, a ranking audit that
+                shows exactly what to fix in your Google Business Profile, and AI-generated Facebook &amp; Instagram
+                posts made straight from your menu.
+              </p>
             </Card>
           </motion.div>
         </Reveal>
