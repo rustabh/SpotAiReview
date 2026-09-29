@@ -110,6 +110,23 @@ export interface AIGmbAuditSummaryResult {
   outputTokens?: number;
 }
 
+export interface AISocialCaptionInput {
+  businessName: string;
+  categoryName: string;
+  productName: string;
+  productDescription?: string | null;
+  isVeg?: boolean | null;
+}
+
+export interface AISocialCaptionResult {
+  caption: string;
+  hashtags: string[];
+  provider: string;
+  model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+}
+
 export interface AIBlogArticleResult {
   title: string;
   metaTitle: string;
@@ -130,6 +147,7 @@ export interface AIProvider {
   generateBlogArticle(topic: string): Promise<AIBlogArticleResult>;
   generateReviewReply(input: AIReviewReplyInput): Promise<AIReviewReplyResult>;
   generateGmbAuditSummary(input: AIGmbAuditSummaryInput): Promise<AIGmbAuditSummaryResult>;
+  generateSocialCaption(input: AISocialCaptionInput): Promise<AISocialCaptionResult>;
 }
 
 /** Minimum signal required before we let AI write anything at all. */

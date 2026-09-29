@@ -180,6 +180,20 @@ enum GoogleReplyStatus {
   FAILED // last post attempt to Google failed
 }
 
+enum SocialConnectionStatus {
+  CONNECTED
+  PENDING_PAGE // user token exchanged, owner still needs to pick which Facebook Page this business is
+  DISCONNECTED
+  AUTH_ERROR // token revoked/expired — needs to reconnect
+}
+
+enum SocialPostStatus {
+  DRAFT // AI wrote it, waiting on the owner to review/edit/post it (or on auto-post)
+  POSTED // live on every connected platform (Facebook, and Instagram if linked)
+  PARTIAL // posted to some connected platforms but not all — see error for which failed
+  FAILED // failed on every connected platform
+}
+
 enum SubscriptionStatus {
   TRIALING
   ACTIVE
@@ -244,6 +258,8 @@ model User {
   createdBusinesses         Business[]                 @relation("BusinessCreator")
   sentTeamInvites           TeamInvite[]
   connectedGoogleBusinesses GoogleBusinessConnection[]
+  connectedSocialAccounts   SocialConnection[]
+  createdSocialPosts        SocialPost[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -445,6 +461,8 @@ model Business {
   posIntegration           POSIntegration?
   googleBusinessConnection GoogleBusinessConnection?
   googleReviews            GoogleReview[]
+  socialConnection         SocialConnection?
+  socialPosts              SocialPost[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -842,6 +860,7 @@ model Product {
   variants       ProductVariant[]
   modifierGroups ProductModifierGroup[]
   orderItems     OrderItem[]
+  socialPosts    SocialPost[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1137,4 +1156,73 @@ model GoogleReview {
 
   @@index([businessId])
   @@index([businessId, replyStatus])
+}
+
+// ---------------------------------------------------------------------------
+// Social auto-posting — AI-drafted Facebook/Instagram posts from the menu
+// ---------------------------------------------------------------------------
+
+model SocialConnection {
+  id                 String                 @id @default(uuid())
+  businessId         String                 @unique
+  business           Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  status             SocialConnectionStatus @default(PENDING_PAGE)
+  facebookPageId     String? // set once a Page is picked, never changes after connect
+  facebookPageName   String?
+  instagramAccountId String? // the Instagram Business account linked to the Page, if any
+  instagramUsername  String?
+  autoPostEnabled    Boolean                @default(false) // false = AI drafts a post and the owner approves it before it goes live
+
+  lastError String?
+
+  connectedById String
+  connectedBy   User   @relation(fields: [connectedById], references: [id])
+
+  credential SocialCredential?
+  posts      SocialPost[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Never read outside src/lib/social/** — every dashboard/action surface gets
+// SocialConnection's status/settings only, never this row. Same pattern as
+// POSCredential/GoogleBusinessCredential.
+model SocialCredential {
+  id                 String           @id @default(uuid())
+  socialConnectionId String           @unique
+  socialConnection   SocialConnection @relation(fields: [socialConnectionId], references: [id], onDelete: Cascade)
+  encryptedPayload   String // AES-256-GCM ciphertext of {userAccessToken, pageAccessToken?}; see src/lib/social/crypto.ts
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SocialPost {
+  id                 String           @id @default(uuid())
+  businessId         String
+  business           Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  socialConnectionId String
+  socialConnection   SocialConnection @relation(fields: [socialConnectionId], references: [id], onDelete: Cascade)
+  productId          String? // the menu item this post is about — null once that product is deleted, or if picked from the business's own photo
+  product            Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  imageUrl String // a real photo already on the menu (or the business cover/logo) — never an AI-hallucinated image
+  caption  String // AI-written, editable
+  hashtags Json   @default("[]") // string[]
+
+  status          SocialPostStatus @default(DRAFT)
+  facebookPostId  String?
+  instagramPostId String?
+  postedAt        DateTime?
+  error           String?
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, status])
 }

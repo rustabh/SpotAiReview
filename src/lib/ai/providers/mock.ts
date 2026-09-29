@@ -9,6 +9,8 @@ import type {
   AIProvider,
   AIReviewReplyInput,
   AIReviewReplyResult,
+  AISocialCaptionInput,
+  AISocialCaptionResult,
   AITransformInput,
   AITransformResult,
 } from "../types";
@@ -207,5 +209,20 @@ export class MockAIProvider implements AIProvider {
       lines.push("Everything on this checklist looks solid — keep it up and revisit this audit periodically.");
     }
     return { content: lines.join(" "), provider: this.name, model: this.model, inputTokens: 0, outputTokens: 0 };
+  }
+
+  async generateSocialCaption(input: AISocialCaptionInput): Promise<AISocialCaptionResult> {
+    const vegNote = input.isVeg === true ? "🌱 100% veg. " : "";
+    const descPart = input.productDescription ? `${input.productDescription.replace(/\.?$/, "")}. ` : "";
+    const caption = `${descPart}Our ${input.productName} at ${input.businessName} is ready for you! ${vegNote}Come taste it today.`.replace(/\s+/g, " ").trim();
+
+    const words = `${input.categoryName} ${input.productName} ${input.businessName}`
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+    const hashtags = Array.from(new Set([...words, "foodie", "localbusiness", "musttry"])).slice(0, 7);
+
+    return { caption, hashtags, provider: this.name, model: this.model, inputTokens: 0, outputTokens: 0 };
   }
 }

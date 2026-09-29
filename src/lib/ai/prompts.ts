@@ -1,4 +1,4 @@
-import type { AIGmbAuditSummaryInput, AIGroundingContext, AIReviewReplyInput, TransformInstruction } from "./types";
+import type { AIGmbAuditSummaryInput, AIGroundingContext, AIReviewReplyInput, AISocialCaptionInput, TransformInstruction } from "./types";
 
 export const SYSTEM_PROMPT = `You are the AiReview writing assistant.
 
@@ -141,4 +141,24 @@ Write a short, encouraging, practical summary (3-5 sentences) for the business o
 - Do not repeat every checklist item — this is a prioritized summary, not a restatement.
 - Plain, direct language a busy shop owner would appreciate — no marketing fluff, no jargon.
 - Output plain text only, no markdown, no preamble.`;
+}
+
+export function buildSocialCaptionPrompt(input: AISocialCaptionInput) {
+  return `You are writing a short Facebook/Instagram caption for ${input.businessName} (a ${input.categoryName}) to promote one of their menu items.
+
+Item name: ${input.productName}
+${input.productDescription ? `Item description: ${input.productDescription}` : "(no description provided)"}
+${input.isVeg === true ? "This item is vegetarian." : input.isVeg === false ? "This item is non-vegetarian." : ""}
+
+Write an upbeat, scroll-stopping caption (2-3 short sentences, at most 1-3 emoji) that makes people want to visit or order today.
+
+Rules:
+- Never invent a price, discount, offer, delivery option, or claim not given above.
+- Do not use hashtags inside the caption text itself, they go in a separate field.
+- Sound like a real local business posting, not a generic ad template.
+
+Respond with strict JSON only, in this exact shape:
+{"caption": "...", "hashtags": ["...", "..."]}
+
+Give 5-8 relevant, non-generic hashtags as plain lowercase words with no spaces and no "#" symbol.`;
 }

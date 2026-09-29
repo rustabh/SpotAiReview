@@ -9,6 +9,8 @@ import type {
   AIProvider,
   AIReviewReplyInput,
   AIReviewReplyResult,
+  AISocialCaptionInput,
+  AISocialCaptionResult,
   AITransformInput,
   AITransformResult,
 } from "../types";
@@ -19,6 +21,7 @@ import {
   buildGmbAuditSummaryPrompt,
   buildInsightsPrompt,
   buildReviewReplyPrompt,
+  buildSocialCaptionPrompt,
   buildTransformPrompt,
 } from "../prompts";
 
@@ -110,5 +113,11 @@ export class AnthropicProvider implements AIProvider {
   async generateGmbAuditSummary(input: AIGmbAuditSummaryInput): Promise<AIGmbAuditSummaryResult> {
     const { content, inputTokens, outputTokens } = await this.messages(buildGmbAuditSummaryPrompt(input));
     return { content: content.trim(), provider: this.name, model: this.model, inputTokens, outputTokens };
+  }
+
+  async generateSocialCaption(input: AISocialCaptionInput): Promise<AISocialCaptionResult> {
+    const { content, inputTokens, outputTokens } = await this.messages(buildSocialCaptionPrompt(input));
+    const parsed = JSON.parse(extractJson(content)) as { caption: string; hashtags: string[] };
+    return { caption: parsed.caption.trim(), hashtags: parsed.hashtags, provider: this.name, model: this.model, inputTokens, outputTokens };
   }
 }

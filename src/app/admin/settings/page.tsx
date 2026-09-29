@@ -1,6 +1,7 @@
 import { getPlatformSettings } from "@/actions/platform";
 import { getRazorpayMode, isRazorpayWebhookConfigured } from "@/lib/payments/razorpay";
 import { isGoogleBusinessConfigured } from "@/lib/google/business-profile";
+import { isSocialConfigured } from "@/lib/social/meta";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ export default async function AdminSettingsPage() {
   const mode = getRazorpayMode();
   const webhookConfigured = isRazorpayWebhookConfigured();
   const googleConfigured = isGoogleBusinessConfigured();
+  const socialConfigured = isSocialConfigured();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -74,6 +76,27 @@ export default async function AdminSettingsPage() {
               <strong>Google&apos;s approval of an API access request</strong> — that approval step happens on Google&apos;s side and
               can&apos;t be skipped. Once approved, set GOOGLE_BUSINESS_CLIENT_ID, GOOGLE_BUSINESS_CLIENT_SECRET, and
               GOOGLE_TOKEN_ENCRYPTION_KEY and this lights up for every business automatically.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-col items-start pb-4">
+          <CardTitle>Social Auto-Posting</CardTitle>
+          <CardDescription>Read-only — set via FACEBOOK_APP_* / SOCIAL_TOKEN_ENCRYPTION_KEY environment variables.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-0">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-ink-500">Facebook &amp; Instagram posting</span>
+            <Badge tone={socialConfigured ? "success" : "neutral"}>{socialConfigured ? "Configured" : "Not configured"}</Badge>
+          </div>
+          {!socialConfigured && (
+            <p className="text-xs text-ink-400">
+              Requires a Meta developer app with Facebook Login and the Instagram Graph API products added, and{" "}
+              <strong>Meta&apos;s App Review approval</strong> for the pages_manage_posts and instagram_content_publish permissions —
+              that approval step happens on Meta&apos;s side and can&apos;t be skipped. Once approved, set FACEBOOK_APP_ID,
+              FACEBOOK_APP_SECRET, and SOCIAL_TOKEN_ENCRYPTION_KEY and this lights up for every business automatically.
             </p>
           )}
         </CardContent>
