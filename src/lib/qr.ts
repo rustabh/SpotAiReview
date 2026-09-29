@@ -10,6 +10,12 @@ export function tableOrderUrl(qrToken: string) {
   return `${base}/order/${qrToken}`;
 }
 
+/** The Smart Link — a single, permanent link for a business's digital menu/catalogue, independent of any table or campaign. */
+export function menuUrl(slug: string) {
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return `${base}/menu/${slug}`;
+}
+
 export async function generateQrPngDataUrl(url: string, opts?: { fg?: string; bg?: string }) {
   return QRCode.toDataURL(url, {
     margin: 2,

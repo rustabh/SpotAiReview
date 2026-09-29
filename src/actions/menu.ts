@@ -39,6 +39,16 @@ export async function listUncategorizedProducts(businessId: string) {
   });
 }
 
+/** Public — no login. Resolves a business by its own slug for the Smart Link (/menu/[slug]) page. */
+export async function getPublicBusinessBySlug(slug: string) {
+  const business = await prisma.business.findUnique({
+    where: { slug },
+    include: { category: true },
+  });
+  if (!business || business.status !== "ACTIVE") return null;
+  return business;
+}
+
 /** Public — no login. Only available products, for the customer-facing menu/order page. */
 export async function getPublicMenu(businessId: string) {
   const categories = await prisma.productCategory.findMany({

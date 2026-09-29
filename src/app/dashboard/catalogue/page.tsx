@@ -1,12 +1,16 @@
 import { listMyBusinesses } from "@/actions/business";
 import { listMenu, listUncategorizedProducts } from "@/actions/menu";
 import { getEffectiveFeatures } from "@/lib/features";
+import { menuUrl, generateQrPngDataUrl, generateQrSvg } from "@/lib/qr";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { BusinessSwitcher } from "@/components/dashboard/business-switcher";
 import { EmptyState } from "@/components/ui/empty-state";
 import { EnableMenuButton } from "@/components/menu/enable-menu-button";
 import { CatalogueBuilder } from "@/components/menu/catalogue-builder";
+import { QrCard } from "@/components/dashboard/qr-card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { UtensilsCrossed, Building2 } from "lucide-react";
+import { slugify } from "@/lib/utils";
 
 export default async function CataloguePage({
   searchParams,
@@ -44,9 +48,32 @@ export default async function CataloguePage({
           action={<EnableMenuButton businessId={businessId} />}
         />
       ) : (
-        <CatalogueContent businessId={businessId} />
+        <div className="space-y-6">
+          <SmartLinkCard slug={business.slug} name={business.name} />
+          <CatalogueContent businessId={businessId} />
+        </div>
       )}
     </div>
+  );
+}
+
+async function SmartLinkCard({ slug, name }: { slug: string; name: string }) {
+  const url = menuUrl(slug);
+  const [pngDataUrl, svg] = await Promise.all([generateQrPngDataUrl(url), generateQrSvg(url)]);
+
+  return (
+    <Card>
+      <CardHeader className="flex-col items-start pb-4">
+        <CardTitle>Your Smart Link</CardTitle>
+        <CardDescription>
+          One permanent link customers scan, tap (NFC) or click to see this menu — share it on your Google Business profile, Instagram
+          bio, or write it onto an NFC tag with any NFC-writer app.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <QrCard pngDataUrl={pngDataUrl} svg={svg} url={url} fileName={`${slugify(name)}-smart-link`} />
+      </CardContent>
+    </Card>
   );
 }
 
